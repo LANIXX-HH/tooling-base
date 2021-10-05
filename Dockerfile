@@ -11,7 +11,6 @@ ARG HELM_VERSION=${HELM_VERSION:-"3.7.0"}
 ARG TERRAGRUNT_VERSION=${TERRAGRUNT_VERSION:-"0.31.8"}
 ARG TERRAFORM_VERSION=${TERRAFORM_VERSION:-"0.12.31 0.14.11 0.15.3"}
 
-ARG TF_KAFKA_PROVIDER_VERSION=0.2.12
 ARG TF_KAFKA_PROVIDER_NAME=terraform-provider-kafka
 
 # build base image
@@ -103,7 +102,6 @@ RUN git clone https://github.com/cunymatthieu/tgenv.git /usr/local/tgenv
 FROM base AS terraform-provider-kafka
 WORKDIR /
 COPY gh-dl-release.sh .
-ARG TF_KAFKA_PROVIDER_VERSION
 ARG TF_KAFKA_PROVIDER_NAME
 RUN curl --silent --location --output ${TF_KAFKA_PROVIDER_NAME}_linux_amd64.zip -s "$(curl -s https://api.github.com/repos/Mongey/terraform-provider-kafka/releases/latest | jq -r ' .assets[] | select(.name|test("linux_amd64")) | select(.name|test("linux_amd64.zip$")) .browser_download_url')" \
   && unzip ${TF_KAFKA_PROVIDER_NAME}_linux_amd64.zip > /dev/null \
