@@ -18,6 +18,6 @@ jobs:
 
     - name: Build the hello-world Docker image
       run: |
-        docker build . --tag ghcr.io/LANIXX-HH/tooling-base:latest
-        docker run ghcr.io/LANIXX-HH/tooling-base:latest
-        docker push ghcr.io/LANIXX-HH/tooling-base:latest
+        docker build . --tag ghcr.io/lanixx-hh/tooling-base:latest
+        docker run ghcr.io/lanixx-hh/tooling-base:latest
+        docker push ghcr.io/lanixx-hh/tooling-base:latest
