@@ -105,12 +105,9 @@ WORKDIR /
 COPY gh-dl-release.sh .
 ARG TF_KAFKA_PROVIDER_VERSION
 ARG TF_KAFKA_PROVIDER_NAME
-ARG checksum="b3ed33758650f27a8da5c90dd04bd5673103c083c4e78db5e82c9c645e28635e"
-RUN ./gh-dl-release.sh v${TF_KAFKA_PROVIDER_VERSION} "Mongey/terraform-provider-kafka" ${TF_KAFKA_PROVIDER_NAME}_${TF_KAFKA_PROVIDER_VERSION}_linux_amd64.zip \
-  && unzip ${TF_KAFKA_PROVIDER_NAME}_${TF_KAFKA_PROVIDER_VERSION}_linux_amd64.zip > /dev/null \
-  && mv ${TF_KAFKA_PROVIDER_NAME}_v${TF_KAFKA_PROVIDER_VERSION} ${TF_KAFKA_PROVIDER_NAME} \
-  && echo Download checksum: $(sha256sum ${TF_KAFKA_PROVIDER_NAME}) \
-  && sha256sum ${TF_KAFKA_PROVIDER_NAME} | grep "$checksum"
+RUN curl --silent --location --output ${TF_KAFKA_PROVIDER_NAME}_linux_amd64.zip -s "$(curl -s https://api.github.com/repos/Mongey/terraform-provider-kafka/releases/latest | jq -r ' .assets[] | select(.name|test("linux_amd64")) | select(.name|test("linux_amd64.zip$")) .browser_download_url')" \
+  && unzip ${TF_KAFKA_PROVIDER_NAME}_linux_amd64.zip > /dev/null \
+  && mv ${TF_KAFKA_PROVIDER_NAME}_v* ${TF_KAFKA_PROVIDER_NAME}
 
 ### kubectl
 FROM base AS kubectl
@@ -263,8 +260,6 @@ COPY --from=terraform	/usr/local/tfenv/libexec	/usr/local/tfenv/libexec
 COPY --from=terraform	/usr/local/tfenv/share		/usr/local/tfenv/share
 
 ARG TF_KAFKA_PROVIDER_NAME
-ARG TF_FM_PROVIDER_BINARY
-ARG TF_MONGODBATLAS_PROVIDER_BINARY
 COPY --from=terraform-provider-kafka /${TF_KAFKA_PROVIDER_NAME} /usr/local/terraform-plugins/terraform-provider-kafka
 
 RUN ln -s /usr/local/tfenv/bin/tfenv /usr/local/bin/tfenv \
