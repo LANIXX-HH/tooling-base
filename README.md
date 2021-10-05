@@ -39,6 +39,107 @@ $(aws-assume.sh ”arn:aws:iam::808833771028:role/continuous” ”stage-dev” 
 
 ## How To use it (docker-compose example)
 
+### Prerequsites
+
+### How To use on Linux or MacOS
+
+```
+cd /path/to/tooling/image
+UID=$(id -u) docker-compose build
+```
+
+for Linux:
+
+```shell
+docker-compose -f docker-compose.yml -f volumes.yml run --rm tooling
+```
+
+for MacOS:
+
+```shell
+docker-compose -f docker-compose.yml -f volumes-mac.yml run --rm tooling
+```
+
+### How To use on Windows
+
+#### Pre Steps:
+
+`git config --global core.autocrlf input` - settings to clone ae_infrastructure repository with LF newline style (UNIX). 
+You can change all *.py and *.sh files in tooling/ directory manually and save files with LF newline format
+
+create your own volumes-windows.yml version with additional shares
+
+#### PowerShell Steps:
+
+```
+cd C:\Path\To\tooling\image
+$env:USER=$env:USERNAME 
+docker-compose build
+$env:AWS_PROFILE="<your_aws_sso_profile>"
+docker-compose -f docker-compose.yml -f my-own-volumes-windows.yml run --rm tooling bash
+```
+
+### docker-compose.yml
+
+```yaml
+version: "3"
+services:
+  tooling:
+    privileged: true
+    entrypoint: "/entrypoint.sh"
+    network_mode: "host"
+    container_name: "tooling"
+    hostname: "tooling"
+    build:
+      context: .
+      args:
+        IMAGE: ghcr.io/lanixx-hh/tooling-base:latest
+        TAG: latest
+        USER: ${USER:-user}
+        UID: ${UID:-1000}
+        TERRAFORM_VERSION: '0.11.14 0.12.29'
+        TERRAGRUNT_VERSION: '0.25.5 0.25.3' 
+        HELM_VERSION: '2.14.3 3.1.1'
+    environment:
+      SHELL: /bin/zsh
+      KUBECONFIG: /home/${USER}/.kube/config
+      SSH_PRIVATE_KEY_FILE: /home/${USER}/.ssh/id_rsa
+      SSO_PROFILE: ${SSO_PROFILE:-}
+```
+
+### volumes-windows.yml
+
+```yaml
+version: "3"
+services:
+  tooling:
+    volumes:
+      - "C:\Users\${USERNAME}\Path:/container/path"
+```
+
+### volumes-mac.yml
+
+```yaml
+version: "3"
+services:
+  tooling:
+    volumes:
+      - /Users:/Users
+      - /Volumes:/Volumes
+      - ${HOME}:${HOME}
+      - ${HOME}:/home/${USER}
+```
+
+### volumes.yml
+
+```yaml
+version: "3"
+services:
+  tooling:
+    volumes:
+      - /host/path:/container/path
+```
+
 ### example yaml for runfromyaml wrapper
 
 ```yaml
@@ -96,19 +197,6 @@ cmd:
         echo "export kubeconfig $KUBECONFIG"
         export KUBECONFIG=$KUBECONFIG
       fi
-
-      _STATUS=$?
-      if test "$_STATUS" = "0"; then
-        if [ -f ~/.local/aws-sso-envs ]; then
-          eval "$(sed 's|^|export |g' <"$HOME/.local/aws-sso-envs")"
-        fi
-
-        if [ -f "$HOME/.local/aws-assumed-envs-$SSO_PROFILE" ]; then
-          eval "$(cat "$HOME/.local/aws-assumed-envs-$SSO_PROFILE")"
-        fi
-      fi
-
-      export ENVIRONMENT=ae-${AWS_PROFILE:-test}
 
       ### run command
       if [ "x$*" = "x" ]; then
@@ -171,7 +259,6 @@ cmd:
 
 
       COPY entrypoint.sh /entrypoint.sh
-      COPY aws-sso.sh /usr/local/bin/aws-sso.sh
       COPY aws-assume.sh /usr/local/bin/aws-assume.sh
 
       ### set user
@@ -193,7 +280,6 @@ cmd:
             - ${HOME}/Projects/dot_files:/home/${USER}
             - ${HOME}/Projects:/home/${USER}/Projects
             - ${HOME}/Projects:${HOME}/Projects
-            - $PWD/../../../:/ae_infrastructure
             - /var/run/docker.sock:/var/run/docker.sock
     confdest: /tmp/tooling/volumes-mac.yaml
     confperm: 0644
