@@ -39,12 +39,6 @@ $(aws-assume.sh ”arn:aws:iam::808833771028:role/continuous” ”stage-dev” 
 
 ## How To use it (docker-compose example)
 
-### base docker-compose.yml
-
-```yaml
-
-```
-
 ### example yaml for runfromyaml wrapper
 
 ```yaml
