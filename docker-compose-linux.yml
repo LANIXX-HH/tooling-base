@@ -1,0 +1,22 @@
+version: "3"
+services:
+  final:
+    privileged: true
+    entrypoint: "/entrypoint.sh"
+    network_mode: "host"
+    container_name: "final"
+    hostname: "final"
+    build:
+      context: .
+      args:
+        IMAGE: alpine
+        TAG: edge
+    volumes:
+      - ${HOME}:${HOME}
+      - $PWD/../../../:/ae_infrastructure
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      SHELL: /bin/zsh
+      KUBECONFIG: ${HOME}/.kube/config
+      SSH_PRIVATE_KEY: ${HOME}/.ssh/id_rsa
+      SSO_PROFILE: ${SSO_PROFILE:-}

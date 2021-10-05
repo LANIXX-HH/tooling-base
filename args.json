@@ -1,0 +1,11 @@
+{
+    "IMAGE": "alpine",
+    "TAG": "latest",
+    "KOPS_VERSION": "v1.17.0",
+    "KAFKA_VERSION": "2.2.2",
+    "SCALA_VERSION": "2.12",
+    "TERRAFORM_VERSION": "0.12.30",
+    "TERRAGRUNT_VERSION": "0.28.18",
+    "HELM_VERSION": "3.5.3",
+    "FLY": "6.7.2"
+}

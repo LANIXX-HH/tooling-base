@@ -1,0 +1,27 @@
+#!/bin/bash
+# Tool to quickly set one or more git co-authors when pair programming, see
+# https://help.github.com/articles/creating-a-commit-with-multiple-authors/
+#
+# For this to work, you need to do 3 things:
+#
+#   1) Run: git config commit.template '~/.gitmessage'
+#   2) Create ~/.gitauthors using git-authors or some other mechanism
+#   3) Install https://github.com/junegunn/fzf
+#
+# Use `git-pair` to start a pairing session and `git-solo` to end it.
+#
+# Note that fzf allows you to select multiple authors with tab/shift-tab.
+#
+
+set -e
+set -o pipefail
+
+test "$(git config --path commit.template)" = "" && ( touch $HOME/.tooling-gitmessage && git config commit.template $HOME/.tooling-gitmessage )
+test "$(cat $HOME/.tooling-gitauthors)" = "" && test "$(git authors)" != "" && git authors > $HOME/.tooling-gitauthors 
+
+template="$(git config --path commit.template)"
+coauthors="$(fzf -m < "$HOME/.tooling-gitauthors")"
+
+{ printf "\n\n"; echo "$coauthors" | sed 's/^/Co-authored-by: /'; } > "$template"
+
+printf "You are now pairing with:\n${coauthors}\n"

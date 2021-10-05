@@ -1,0 +1,37 @@
+#!/bin/bash
+# Helper script to quickly create pull requests on GitHub or Bitbucket.
+#
+# Create a branch as usual, e.g. `git checkout -b my-branch`. After adding some
+# commits, run `git pp` to create a PR against master or `git pp target` to
+# target another branch.
+
+set -e
+set -o pipefail
+
+BASE_BRANCH=${1:-master}
+
+# Push current branch.
+HEAD_BRANCH=$(git symbolic-ref --short HEAD)
+if test "$HEAD_BRANCH" = "$BASE_BRANCH"; then
+    echo "You don't want to do this in '$BASE_BRANCH', right?"
+    exit 1
+fi
+git push --set-upstream origin "$HEAD_BRANCH"
+
+# Create PR on GitHub or Bitbucket.
+ORIGIN_URL=$(git config remote.origin.url)
+case "$ORIGIN_URL" in
+*github.com*)
+    exec hub pull-request --base="$BASE_BRANCH" --assign="$GITHUB_USER" --browse ;;
+*bitbucket.org*)
+    BITBUCKET_URL=$(echo $ORIGIN_URL | sed 's!^.*://!!;s!.git$!!;s!:!/!')
+    exec open "https://$BITBUCKET_URL/pull-requests/new?source=$HEAD_BRANCH&dest=$BASE_BRANCH" ;;
+*bitbucket.*)
+    DOMAIN=$(echo $ORIGIN_URL | awk -F[/:] '{print $4}' | sed 's!git@!!')
+    PROJECT=$(echo $ORIGIN_URL | awk -F/ '{print $(NF-1)}')
+    REPO=$(echo $ORIGIN_URL | awk -F/ '{print $NF}' | sed 's/.git$//')
+    exec open "https://$DOMAIN/projects/$PROJECT/repos/$REPO/compare/commits?sourceBranch=$HEAD_BRANCH&targetBranch=$BASE_BRANCH" ;;
+*)
+    echo "Unsupported origin: $ORIGIN_URL"
+    exit 1 ;;
+esac
