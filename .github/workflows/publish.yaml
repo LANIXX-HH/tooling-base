@@ -3,7 +3,7 @@ name: publish
 on: [push]
 
 jobs:
-  publish-hello-world-image:
+  publish-tooling-base-image:
     runs-on: ubuntu-latest
 
     steps:
