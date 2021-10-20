@@ -296,7 +296,7 @@ cmd:
           build:
             context: .
             args:
-              IMAGE: 720927046408.dkr.ecr.eu-central-1.amazonaws.com/ops-infrastructure.tooling-base
+              IMAGE: ghcr.io/lanixx-hh/tooling-base
               TAG: latest
               USER: ${USER:-user}
               UID: ${UID:-1000}
@@ -315,9 +315,8 @@ cmd:
     desc: "start tooling"
     values:
       - export PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/Users/anatolilichii/.local/bin &&
-      - aws sts get-caller-identity --profile mgmt || ( aws sso login --profile mgmt &&
-      - export PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/Users/anatolilichii/.local/bin &&
-      - aws ecr get-login-password --profile mgmt | docker login --username AWS --password-stdin 720927046408.dkr.ecr.eu-central-1.amazonaws.com &&
+      - ( export PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/Users/anatolilichii/.local/bin &&
+      - docker pull ghcr.io/lanixx-hh/tooling-base:latest &&
       - docker-compose
       - -f /tmp/tooling/docker-compose.yaml
       - --project-directory /tmp/tooling
