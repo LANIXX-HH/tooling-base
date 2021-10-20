@@ -93,7 +93,7 @@ services:
     build:
       context: .
       args:
-        IMAGE: ghcr.io/lanixx-hh/tooling-base:latest
+        IMAGE: ghcr.io/lanixx-hh/tooling-base
         TAG: latest
         USER: ${USER:-user}
         UID: ${UID:-1000}
