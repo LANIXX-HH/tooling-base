@@ -142,6 +142,18 @@ services:
 
 ### example yaml for runfromyaml wrapper
 
+get runfromyaml
+~~~shell
+curl --silent --location "https://github.com/lanixx-hh/runfromyaml/releases/latest/download/runfromyaml-$(uname -s)-$(uname -m).tar.gz" | tar xz
+~~~
+
+run tooling image: 
+~~~shell
+./runfromyaml -file tooling.yaml
+~~~
+
+tooling.yaml:
+
 ```yaml
 ---
 cmd:
