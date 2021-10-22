@@ -140,15 +140,11 @@ services:
       - /host/path:/container/path
 ```
 
-### example yaml for runfromyaml wrapper
+### full example: tooling yaml wrapper + runfromyaml binary
 
-get runfromyaml and example tooling yaml
+get runfromyaml and example tooling yaml and run it
 ~~~shell
 curl --silent --location "https://github.com/lanixx-hh/runfromyaml/releases/latest/download/runfromyaml-$(uname -s)-$(uname -m).tar.gz" | tar xz
 curl --silent --location --output tooling.yaml https://raw.githubusercontent.com/LANIXX-HH/runfromyaml/master/examples/tooling.yaml
-~~~
-
-run tooling image: 
-~~~shell
 ./runfromyaml -file tooling.yaml
 ~~~
