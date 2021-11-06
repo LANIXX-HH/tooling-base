@@ -24,6 +24,7 @@ USER root
 ### install missing tools
 RUN apk update && apk add 
 RUN apk --no-cache --update add \
+  apparmor-profiles \
   bash \
   bash-completion \
   bind-tools \
