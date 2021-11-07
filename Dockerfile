@@ -75,7 +75,7 @@ RUN apk --no-cache --update add \
   zsh \
   zsh-vcs \
   && ln -s /usr/bin/python3 /usr/bin/python \
-  && $ sudo ln -s /usr/share/pyshared/lsb_release.py /usr/local/lib/python3.9/site-packages/lsb_release.py || exit 0
+  && ln -s /usr/share/pyshared/lsb_release.py /usr/local/lib/python3.9/site-packages/lsb_release.py || exit 0
 RUN apk search -qe '*-zsh-completion' | xargs apk add --update --no-cache || exit 0
 
 ### install pip packages from requirements.txt and awscli v2
