@@ -74,17 +74,18 @@ RUN apk --no-cache --update add \
   vim \
   zsh \
   zsh-vcs \
-  && ln -s /usr/bin/python3 /usr/bin/python || exit 0
+  && ln -s /usr/bin/python3 /usr/bin/python \
+  && $ sudo ln -s /usr/share/pyshared/lsb_release.py /usr/local/lib/python3.9/site-packages/lsb_release.py || exit 0
 RUN apk search -qe '*-zsh-completion' | xargs apk add --update --no-cache || exit 0
 
 ### install pip packages from requirements.txt and awscli v2
 ### disabled: ansible-vault
 COPY requirements.txt /tmp
-RUN ( apk --no-cache add apparmor-profiles dev86 g++ python3-dev libffi-dev postgresql-dev  py3-mysqlclient py3-psycopg2 cmake alpine-sdk || exit 0 ) \
+RUN ( apk --no-cache add dev86 g++ python3-dev libffi-dev postgresql-dev  py3-mysqlclient py3-psycopg2 cmake alpine-sdk || exit 0 ) \
   && pip3 install --upgrade --force-reinstall pip \
   && python3 -m ensurepip --upgrade \
   && pip3 install --ignore-installed -r /tmp/requirements.txt \
-  && ( apk del apparmor-profiles dev86 g++ python3-dev libffi-dev postgresql-dev cmake alpine-sdk || exit 0 ) \
+  && ( apk del dev86 g++ python3-dev libffi-dev postgresql-dev cmake alpine-sdk || exit 0 ) \
   && rm -rf /var/lib/apk/*
 
 WORKDIR /workspace
@@ -129,9 +130,9 @@ RUN rm -rf /usr/local/pre-commit/.cache
 FROM base AS assume-role
 WORKDIR /tmp/go
 ENV GOPATH /tmp/go
-RUN apk --no-cache add apparmor-profiles go alpine-sdk || exit 0
+RUN apk --no-cache add go alpine-sdk || exit 0
 RUN go get github.com/remind101/assume-role && mv /tmp/go/bin/assume-role /usr/local/bin \
-  && ( apk del apparmor-profiles go alpine-sdk || exit 0 ) \
+  && ( apk del go alpine-sdk || exit 0 ) \
   && rm -rf  $GOPATH
 
 #### kops
