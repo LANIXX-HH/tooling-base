@@ -31,7 +31,8 @@ jobs:
     - name: Build tooling image for linux/arm64/v8
       run: |
         docker pull --platform linux/arm64/v8 ghcr.io/lanixx-hh/tooling-base:latest || /bin/true
-        docker build --platform linux/arm64/v8 --install arm64 --tag ghcr.io/lanixx-hh/tooling-base:latest --cache-from ghcr.io/lanixx-hh/tooling-base:latest --build-arg IMAGE=multiarch/alpine --build-arg TAG=arm64-edge --push .
+        docker run --privileged --rm tonistiigi/binfmt --install all
+        docker build --platform linux/arm64/v8 --tag ghcr.io/lanixx-hh/tooling-base:latest --cache-from ghcr.io/lanixx-hh/tooling-base:latest --build-arg IMAGE=multiarch/alpine --build-arg TAG=arm64-edge --push .
     - name: Build tooling image for amd64
       run: |
         docker pull --platform linux/amd64  ghcr.io/lanixx-hh/tooling-base:latest || /bin/true
