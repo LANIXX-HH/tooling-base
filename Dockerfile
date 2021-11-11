@@ -14,10 +14,12 @@ ARG TERRAFORM_VERSION=${TERRAFORM_VERSION:-"0.12.31 0.14.11 0.15.3"}
 ARG TF_KAFKA_PROVIDER_NAME=terraform-provider-kafka
 
 # build base image
+ARG ARCH=${ARCH:-${ARCH}}
 ARG IMAGE=${IMAGE:-alpine}
 ARG TAG=${TAG:-edge}
 FROM $IMAGE:$TAG as base
 ENV GLIBC_VER=2.31-r0 
+ARG ARCH
 
 USER root
 
@@ -93,41 +95,48 @@ CMD ["bash"]
 
 # terraform
 FROM base as terraform
+ARG ARCH
 RUN git clone https://github.com/tfutils/tfenv.git /usr/local/tfenv
 
 # terragrunt
 FROM base as terragrunt
+ARG ARCH
 RUN git clone https://github.com/cunymatthieu/tgenv.git /usr/local/tgenv
 
 #  terraform-providers: kafka, fm, mongodbatlas, ldap
 #  terraform-providers: kafka
 FROM base AS terraform-provider-kafka
+ARG ARCH
 WORKDIR /
 COPY gh-dl-release.sh .
 ARG TF_KAFKA_PROVIDER_NAME
-RUN curl --silent --location --output ${TF_KAFKA_PROVIDER_NAME}_linux_amd64.zip -s "$(curl -s https://api.github.com/repos/Mongey/terraform-provider-kafka/releases/latest | jq -r ' .assets[] | select(.name|test("linux_amd64")) | select(.name|test("linux_amd64.zip$")) .browser_download_url')" \
-  && unzip ${TF_KAFKA_PROVIDER_NAME}_linux_amd64.zip > /dev/null \
+RUN curl --silent --location --output ${TF_KAFKA_PROVIDER_NAME}_linux_${ARCH}.zip -s "$(curl -s https://api.github.com/repos/Mongey/terraform-provider-kafka/releases/latest | jq -r ' .assets[] | select(.name|test("linux_${ARCH}")) | select(.name|test("linux_${ARCH}.zip$")) .browser_download_url')" \
+  && unzip ${TF_KAFKA_PROVIDER_NAME}_linux_${ARCH}.zip > /dev/null \
   && mv ${TF_KAFKA_PROVIDER_NAME}_v* ${TF_KAFKA_PROVIDER_NAME}
 
 ### kubectl
 FROM base AS kubectl
+ARG ARCH
 WORKDIR /tmp
 RUN curl --silent --location --output kubectl \ 
-  https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl \
+  https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/${ARCH}/kubectl \
   && chmod +x kubectl
 
 ### helm
 FROM base AS helm
+ARG ARCH
 RUN git clone https://github.com/yuya-takeyama/helmenv.git /usr/local/helmenv
 
 ### pre-commit
 FROM base AS precommit
+ARG ARCH
 RUN mkdir /usr/local/pre-commit 
 RUN curl -s https://pre-commit.com/install-local.py | HOME=/usr/local/pre-commit /usr/bin/python3 - 
 RUN rm -rf /usr/local/pre-commit/.cache
 
 ### assume role: return of aws security credentials
 FROM base AS assume-role
+ARG ARCH
 WORKDIR /tmp/go
 ENV GOPATH /tmp/go
 RUN apk --no-cache add go alpine-sdk || exit 0
@@ -137,18 +146,20 @@ RUN go get github.com/remind101/assume-role && mv /tmp/go/bin/assume-role /usr/l
 
 #### kops
 #FROM base AS kops
+#ARG ARCH
 #ARG KOPS_VERSION
 #WORKDIR /tmp
 #RUN curl --silent --location --output kops \
-#  https://github.com/kubernetes/kops/releases/download/${KOPS_VERSION}/kops-linux-amd64 \
+#  https://github.com/kubernetes/kops/releases/download/${KOPS_VERSION}/kops-linux-${ARCH} \
 #  && curl --silent --location --output kops-sha1 \
-#  https://github.com/kubernetes/kops/releases/download/${KOPS_VERSION}/kops-linux-amd64-sha1 \
+#  https://github.com/kubernetes/kops/releases/download/${KOPS_VERSION}/kops-linux-${ARCH}-sha1 \
 #  && echo Download checksum: $(sha1sum kops) \
 #  && sha1sum kops | grep "$(cat kops-sha1)" \
 #  && chmod +x kops
 
 ### kafka
 #FROM base AS kafka
+#ARG ARCH
 #ARG KAFKA_VERSION
 #ARG SCALA_VERSION
 #
@@ -167,6 +178,7 @@ RUN go get github.com/remind101/assume-role && mv /tmp/go/bin/assume-role /usr/l
 
 ### build final image
 FROM base as final
+ARG ARCH
 #RUN adduser -DH -s /sbin/nologin kafka --uid 5001
 
 ### set go path
@@ -190,8 +202,8 @@ RUN wget -O /usr/local/bin/kubectx https://raw.githubusercontent.com/ahmetb/kube
   && chmod +x /usr/local/bin/kube*
 
 ### final steps
-RUN curl --silent -Lo /usr/local/bin/kind "https://kind.sigs.k8s.io/dl/v0.9.0/kind-$(uname)-amd64" && chmod +x /usr/local/bin/kind
-#RUN curl -Lo /usr/local/bin/devspace "https://github.com/devspace-cloud/devspace/releases/download/v5.0.3/devspace-linux-amd64" && chmod +x /usr/local/bin/devspace
+RUN curl --silent -Lo /usr/local/bin/kind "https://kind.sigs.k8s.io/dl/v0.9.0/kind-$(uname)-${ARCH}" && chmod +x /usr/local/bin/kind
+#RUN curl -Lo /usr/local/bin/devspace "https://github.com/devspace-cloud/devspace/releases/download/v5.0.3/devspace-linux-${ARCH}" && chmod +x /usr/local/bin/devspace
 
 COPY --from=helm	/usr/local/helmenv/bin		/usr/local/helmenv/bin
 COPY --from=helm 	/usr/local/helmenv/libexec	/usr/local/helmenv/libexec
@@ -200,58 +212,58 @@ RUN ln -s /usr/local/helmenv/bin/helmenv /usr/local/bin/helmenv \
   && ln -s /usr/local/helmenv/bin/helm /usr/local/bin/helm
 
 ### install helmfile
-RUN curl --silent --location --output /usr/local/bin/helmfile $( curl -s https://api.github.com/repos/roboll/helmfile/releases | jq -r ' .[].assets[].browser_download_url' | grep linux_amd64 | head -1) \
+RUN curl --silent --location --output /usr/local/bin/helmfile $( curl -s https://api.github.com/repos/roboll/helmfile/releases | jq -r ' .[].assets[].browser_download_url' | grep linux_${ARCH} | head -1) \
   && chmod +x /usr/local/bin/helmfile
 
 ### install terraform-docs
-RUN curl --silent --location --output /usr/local/bin/terraform-docs $( curl -s https://api.github.com/repos/terraform-docs/terraform-docs/releases | jq -r ' .[].assets[].browser_download_url' | grep linux-amd64 | head -1) \
+RUN curl --silent --location --output /usr/local/bin/terraform-docs $( curl -s https://api.github.com/repos/terraform-docs/terraform-docs/releases | jq -r ' .[].assets[].browser_download_url' | grep linux-${ARCH} | head -1) \
   && chmod +x /usr/local/bin/terraform-docs
 
 ### tflint
-RUN curl --silent --location --output tflint.zip "$(curl -Ls https://api.github.com/repos/terraform-linters/tflint/releases/latest | grep -o -E "https://.+?_linux_amd64.zip")" && unzip tflint.zip && rm tflint.zip \
+RUN curl --silent --location --output tflint.zip "$(curl -Ls https://api.github.com/repos/terraform-linters/tflint/releases/latest | grep -o -E "https://.+?_linux_${ARCH}.zip")" && unzip tflint.zip && rm tflint.zip \
   && mv tflint /usr/local/bin \
   && chmod +x /usr/local/bin/tflint
 
 ### fly
 ARG FLY
-RUN curl --silent --location --output fly.tgz -s "$(curl -s https://api.github.com/repos/concourse/concourse/releases | jq -r ' . [] | select(.tag_name|test("v'${FLY}'")) | .assets | .[] | select(.name|test("fly-.*-linux-amd64.tgz$")) .browser_download_url')" \
+RUN curl --silent --location --output fly.tgz -s "$(curl -s https://api.github.com/repos/concourse/concourse/releases | jq -r ' . [] | select(.tag_name|test("v'${FLY}'")) | .assets | .[] | select(.name|test("fly-.*-linux-${ARCH}.tgz$")) .browser_download_url')" \
   && tar -xvzf fly.tgz -C . \
   && chmod +x fly \
   && mv fly /usr/local/bin \
   && rm fly.tgz
 
 ### jid
-RUN curl --silent --location --output jid.zip -s "$(curl -s https://api.github.com/repos/simeji/jid/releases/latest | jq -r ' .assets[] | select(.name|test("jid_linux_amd64")) | select(.name|test("jid_linux_amd64.zip$")) .browser_download_url')" \
+RUN curl --silent --location --output jid.zip -s "$(curl -s https://api.github.com/repos/simeji/jid/releases/latest | jq -r ' .assets[] | select(.name|test("jid_linux_${ARCH}")) | select(.name|test("jid_linux_${ARCH}.zip$")) .browser_download_url')" \
   && unzip jid.zip \
   && chmod +x jid \
   && mv jid /usr/local/bin \
   && rm jid.zip
 
 ### aws-iam-authentificator
-RUN curl --silent --location --output /usr/local/bin/aws-iam-authenticator https://amazon-eks.s3.us-west-2.amazonaws.com/1.18.9/2020-11-02/bin/linux/amd64/aws-iam-authenticator \
+RUN curl --silent --location --output /usr/local/bin/aws-iam-authenticator https://amazon-eks.s3.us-west-2.amazonaws.com/1.18.9/2020-11-02/bin/linux/${ARCH}/aws-iam-authenticator \
   && chmod +x /usr/local/bin/aws-iam-authenticator
 
 ### install yq
-RUN curl --silent --location --output /usr/local/bin/yq "$(curl -s https://api.github.com/repos/mikefarah/yq/releases/latest | jq -r ' .assets | .[] | select(.name=="yq_linux_amd64") .browser_download_url')" \
+RUN curl --silent --location --output /usr/local/bin/yq "$(curl -s https://api.github.com/repos/mikefarah/yq/releases/latest | jq -r ' .assets | .[] | select(.name=="yq_linux_${ARCH}") .browser_download_url')" \
   && chmod +x /usr/local/bin/yq
 
 ### eksctl
-RUN curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp \
+RUN curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_${ARCH}.tar.gz" | tar xz -C /tmp \
   && sudo chmod +x /tmp/eksctl \
   && sudo mv /tmp/eksctl /usr/local/bin
 
 ### hub
-RUN curl --silent --location --output hub.tgz -s "$(curl -s https://api.github.com/repos/github/hub/releases/latest | jq -r ' .assets[] | select(.name|test("hub-linux-amd64")) | .browser_download_url')" \
+RUN curl --silent --location --output hub.tgz -s "$(curl -s https://api.github.com/repos/github/hub/releases/latest | jq -r ' .assets[] | select(.name|test("hub-linux-${ARCH}")) | .browser_download_url')" \
   && tar -xvzf hub.tgz $(tar -tzf hub.tgz | grep bin/hub) \
   && mv hub-*/bin/hub /usr/local/bin \
-  && rm -rf hub-linux-amd64* hub.tgz
+  && rm -rf hub-linux-${ARCH}* hub.tgz
 
 ### aws-vault
-RUN curl --silent --location --output /usr/local/bin/aws-vault -s "$(curl -s https://api.github.com/repos/99designs/aws-vault/releases/latest | jq -r ' .assets[] | select(.name|test("aws-vault-linux-amd64")) .browser_download_url')" \
+RUN curl --silent --location --output /usr/local/bin/aws-vault -s "$(curl -s https://api.github.com/repos/99designs/aws-vault/releases/latest | jq -r ' .assets[] | select(.name|test("aws-vault-linux-${ARCH}")) .browser_download_url')" \
   && chmod +x /usr/local/bin/aws-vault
 
 ### direnv
-RUN curl --silent --location --output /usr/local/bin/direnv "$(curl -s https://api.github.com/repos/direnv/direnv/releases/latest  | jq -r ' .assets[] | select(.name|test("direnv.linux-amd64")) .browser_download_url')" \
+RUN curl --silent --location --output /usr/local/bin/direnv "$(curl -s https://api.github.com/repos/direnv/direnv/releases/latest  | jq -r ' .assets[] | select(.name|test("direnv.linux-${ARCH}")) .browser_download_url')" \
   && chmod +x /usr/local/bin/direnv
 
 COPY --from=terraform	/usr/local/tfenv/bin		/usr/local/tfenv/bin
