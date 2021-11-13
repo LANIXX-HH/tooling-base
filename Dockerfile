@@ -1,5 +1,5 @@
 ### A Multi-Stage-Dockerfile to create a container which is provisioned with
-### all the tooling necessary to provision the infrastructure.
+### all the tooling necessary to provision the infrastructure
 
 ### Base
 # Setup build arguments with default versions
