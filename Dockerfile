@@ -269,6 +269,18 @@ RUN curl --silent --location --output /usr/local/bin/aws-vault -s "$(curl -s htt
 RUN curl --silent --location --output /usr/local/bin/direnv "$(curl -s https://api.github.com/repos/direnv/direnv/releases/latest  | jq -r ' .assets[] | .browser_download_url' | grep "linux-${ARCH}")" \
   && chmod +x /usr/local/bin/direnv
 
+### tfsec
+RUN curl --silent --location --output /usr/local/bin/tfsec "$(curl -s https://api.github.com/repos/aquasecurity/tfsec/releases/latest  | jq -r ' .assets[] | .browser_download_url' | grep "linux-${ARCH}$")" \
+  && chmod +x /usr/local/bin/tfsec
+
+#tflint
+RUN curl --silent --location --output tflint.zip -s "$(curl -s https://api.github.com/repos/terraform-linters/tflint/releases/latest | jq -r ' .assets[] | .browser_download_url' | grep "linux_${ARCH}" )" \
+  && unzip tflint.zip \
+  && chmod +x /tmp/tflint \
+  && mv /tmp/tflint /usr/local/bin \
+  && rm tflint.zip
+
+
 COPY --from=terraform	/usr/local/tfenv/bin		/usr/local/tfenv/bin
 COPY --from=terraform	/usr/local/tfenv/lib		/usr/local/tfenv/lib
 COPY --from=terraform	/usr/local/tfenv/libexec	/usr/local/tfenv/libexec
