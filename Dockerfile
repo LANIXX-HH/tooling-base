@@ -108,14 +108,14 @@ RUN find /usr/local/tgenv -type f -print0 | xargs -0 sed -i "s/amd64/${ARCH}/g"
 #terraform-providers: kafka, fm, mongodbatlas, ldap
 #terraform-providers: kafka
 
-FROM base AS terraform-provider-kafka
-ARG ARCH
-WORKDIR /
-COPY gh-dl-release.sh .
-ARG TF_KAFKA_PROVIDER_NAME
-RUN curl --silent --location --output ${TF_KAFKA_PROVIDER_NAME}_linux_${ARCH}.zip -s "$(curl -s https://api.github.com/repos/Mongey/terraform-provider-kafka/releases/latest | jq -r ' .assets[] | .browser_download_url' | grep "linux_$ARCH")" \
- && unzip ${TF_KAFKA_PROVIDER_NAME}_linux_${ARCH}.zip > /dev/null \
- && mv ${TF_KAFKA_PROVIDER_NAME}_v* ${TF_KAFKA_PROVIDER_NAME}
+#FROM base AS terraform-provider-kafka
+#ARG ARCH
+#WORKDIR /
+#COPY gh-dl-release.sh .
+#ARG TF_KAFKA_PROVIDER_NAME
+#RUN curl --silent --location --output ${TF_KAFKA_PROVIDER_NAME}_linux_${ARCH}.zip -s "$(curl -s https://api.github.com/repos/Mongey/terraform-provider-kafka/releases/latest | jq -r ' .assets[] | .browser_download_url' | grep "linux_$ARCH")" \
+# && unzip ${TF_KAFKA_PROVIDER_NAME}_linux_${ARCH}.zip > /dev/null \
+# && mv ${TF_KAFKA_PROVIDER_NAME}_v* ${TF_KAFKA_PROVIDER_NAME}
 
 ### kubectl
 FROM base AS kubectl
@@ -276,8 +276,8 @@ RUN curl --silent --location --output /usr/local/bin/tfsec "$(curl -s https://ap
 #tflint
 RUN curl --silent --location --output tflint.zip -s "$(curl -s https://api.github.com/repos/terraform-linters/tflint/releases/latest | jq -r ' .assets[] | .browser_download_url' | grep "linux_${ARCH}" )" \
   && unzip tflint.zip \
-  && chmod +x /tmp/tflint \
-  && mv /tmp/tflint /usr/local/bin \
+  && chmod +x tflint \
+  && mv tflint /usr/local/bin \
   && rm tflint.zip
 
 
@@ -286,8 +286,8 @@ COPY --from=terraform	/usr/local/tfenv/lib		/usr/local/tfenv/lib
 COPY --from=terraform	/usr/local/tfenv/libexec	/usr/local/tfenv/libexec
 COPY --from=terraform	/usr/local/tfenv/share		/usr/local/tfenv/share
 
-ARG TF_KAFKA_PROVIDER_NAME
-COPY --from=terraform-provider-kafka /${TF_KAFKA_PROVIDER_NAME} /usr/local/terraform-plugins/terraform-provider-kafka
+#ARG TF_KAFKA_PROVIDER_NAME
+#COPY --from=terraform-provider-kafka /${TF_KAFKA_PROVIDER_NAME} /usr/local/terraform-plugins/terraform-provider-kafka
 
 RUN ln -s /usr/local/tfenv/bin/tfenv /usr/local/bin/tfenv \
   && /usr/local/bin/tfenv install ${TERRAFORM_VERSION} \
