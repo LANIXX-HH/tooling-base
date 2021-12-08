@@ -2,8 +2,8 @@
 setuptools
 six
 distlib
-https://codeload.github.com/boto/botocore/zip/v2  
-https://codeload.github.com/aws/aws-cli/zip/v2
+awscliv2
+boto3
 asn1crypto
 cachetools
 certifi
@@ -12,7 +12,6 @@ chardet
 colorama
 dictdiffer
 docutils
-enum34
 futures
 google-auth
 idna
