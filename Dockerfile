@@ -130,13 +130,6 @@ FROM base AS helm
 ARG ARCH
 RUN git clone https://github.com/yuya-takeyama/helmenv.git /usr/local/helmenv
 
-### pre-commit
-FROM base AS precommit
-ARG ARCH
-RUN mkdir /usr/local/pre-commit 
-RUN curl -s https://pre-commit.com/install-local.py | HOME=/usr/local/pre-commit /usr/bin/python3 - 
-RUN rm -rf /usr/local/pre-commit/.cache
-
 ### assume role: return of aws security credentials
 FROM base AS assume-role
 ARG ARCH
@@ -178,17 +171,15 @@ RUN go get github.com/remind101/assume-role && mv /tmp/go/bin/assume-role /usr/l
 #  && rm -rf /tmp/* \
 #  && (apk del --purge .build-deps || exit 0)
 
-FROM golang:1.15.3-alpine as ssm-builder
+FROM ubuntu:20.04 as sessionmanagerplugin
 
-ARG VERSION=1.2.279.0
+RUN apt-get update \
+    && apt-get install -y curl \
+    && curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_arm64/session-manager-plugin.deb" -o "session-manager-plugin.deb" \
+    && dpkg -i "session-manager-plugin.deb"
 
-RUN set -ex && apk add --no-cache make git gcc libc-dev curl bash zip && \
-    curl -sLO https://github.com/aws/session-manager-plugin/archive/${VERSION}.tar.gz && \
-    mkdir -p /go/src/github.com && \
-    tar xzf ${VERSION}.tar.gz && \
-    mv session-manager-plugin-${VERSION} /go/src/github.com/session-manager-plugin && \
-    cd /go/src/github.com/session-manager-plugin && \
-    make release
+
+FROM alpine:2.13
 
 ### build final image
 FROM base as final
@@ -291,7 +282,6 @@ RUN curl --silent --location --output tflint.zip -s "$(curl -s https://api.githu
   && mv tflint /usr/local/bin \
   && rm tflint.zip
 
-
 COPY --from=terraform	/usr/local/tfenv/bin		/usr/local/tfenv/bin
 COPY --from=terraform	/usr/local/tfenv/lib		/usr/local/tfenv/lib
 COPY --from=terraform	/usr/local/tfenv/libexec	/usr/local/tfenv/libexec
@@ -311,7 +301,6 @@ RUN ln -s /usr/local/tgenv/bin/terragrunt /usr/local/bin/terragrunt \
   && export TERRAGRUNT_VERSION=$(tgenv list-remote | head -1) \
   && /usr/local/bin/tgenv install ${TERRAGRUNT_VERSION}
 
-COPY --from=precommit	/usr/local/pre-commit		/usr/local/pre-commit
 RUN ln -s /usr/local/pre-commit/bin/pre-commit /usr/local/bin/pre-commit
 
 COPY --from=assume-role	/usr/local/bin/assume-role	/usr/local/bin/assume-role
@@ -320,7 +309,7 @@ COPY --from=kubectl  	/tmp/kubectl			/usr/local/bin/kubectl
 #COPY --from=kafka       /opt/kafka			/opt/kafka
 #RUN chown -R kafka: /opt/kafka
 
-COPY --from=ssm-builder /go/src/github.com/session-manager-plugin/bin/linux_amd64_plugin/session-manager-plugin /usr/local/bin/
+COPY --from=sessionmanagerplugin /usr/local/sessionmanagerplugin/bin/session-manager-plugin /usr/local/bin/
 
 ### copy all prebuilded tools from other docker images
 ### zsh installation

@@ -22,6 +22,7 @@ markupsafe
 oauthlib
 openshift
 pipenv
+pre-commit
 psycopg2-binary
 pyasn1-modules
 pyasn1
