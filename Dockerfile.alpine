@@ -16,8 +16,8 @@ ARG TF_KAFKA_PROVIDER_NAME=terraform-provider-kafka
 # build base image
 ARG ARCH=${ARCH:-${ARCH}}
 ARG UNAME=${UNAME:-${UNAME}}
-ARG IMAGE=${IMAGE:-amazon/aws-cli}
-ARG TAG=${TAG:-latest}
+ARG IMAGE=${IMAGE:-alpine}
+ARG TAG=${TAG:-edge}
 FROM $IMAGE:$TAG as base
 ENV GLIBC_VER=2.31-r0 
 ARG ARCH
@@ -25,15 +25,18 @@ ARG ARCH
 USER root
 
 ### install missing tools
-RUN yum install -y -q \
+RUN apk update \
+  && apk --no-cache --update add \
   apparmor-profiles \
   bash \
   bash-completion \
-  bind-utils \
+  bind-tools \
+  busybox \
   ca-certificates \
   coreutils \
   curl \
   dialog \
+  docker \
   dos2unix \
   findutils \
   fzf \
@@ -72,15 +75,19 @@ RUN yum install -y -q \
   unzip \
   util-linux \
   vim \
-  wget \
-  zsh 
+  zsh \
+  zsh-vcs 
+RUN apk search -qe '*-zsh-completion' | grep -v sway | xargs apk add --update --no-cache
 
 ### install pip packages from requirements.txt and awscli v2
 ### disabled: ansible-vault
 COPY requirements.txt /tmp
-RUN pip3 install --upgrade --force-reinstall pip \
+RUN apk --no-cache add dev86 g++ python3-dev libffi-dev postgresql-dev  py3-mysqlclient py3-psycopg2 cmake alpine-sdk \
+  && pip3 install --upgrade --force-reinstall pip \
   && python3 -m ensurepip --upgrade \
-  && pip3 install --ignore-installed -r /tmp/requirements.txt
+  && pip3 install --ignore-installed -r /tmp/requirements.txt \
+  && apk del dev86 g++ python3-dev libffi-dev postgresql-dev cmake alpine-sdk \
+  && rm -rf /var/lib/apk/*
 
 WORKDIR /workspace
 CMD ["bash"]
@@ -121,6 +128,16 @@ RUN curl --silent --location --output kubectl \
 FROM base AS helm
 ARG ARCH
 RUN git clone https://github.com/yuya-takeyama/helmenv.git /usr/local/helmenv
+
+### assume role: return of aws security credentials
+FROM base AS assume-role
+ARG ARCH
+WORKDIR /tmp/go
+ENV GOPATH /tmp/go
+RUN apk --no-cache add go alpine-sdk
+RUN go get github.com/remind101/assume-role && mv /tmp/go/bin/assume-role /usr/local/bin \
+  && apk del go alpine-sdk \
+  && rm -rf  $GOPATH
 
 #### kops
 #FROM base AS kops
@@ -167,7 +184,7 @@ ARG UNAME
 #RUN adduser -DH -s /sbin/nologin kafka --uid 5001
 
 ### set go path
-ENV PATH=$PATH:/usr/local/go/bin:~/.local/bin:/usr/local/bin
+ENV PATH=$PATH:/usr/local/go/bin:~/.local/bin
 
 ### set timezone
 ENV TZ Europe/Berlin
@@ -313,12 +330,15 @@ RUN ln -s /usr/local/tgenv/bin/terragrunt /usr/local/bin/terragrunt \
   && export TERRAGRUNT_VERSION=$(tgenv list-remote | head -1) \
   && /usr/local/bin/tgenv install ${TERRAGRUNT_VERSION}
 
+RUN ln -s /usr/local/pre-commit/bin/pre-commit /usr/local/bin/pre-commit
+
+COPY --from=assume-role	/usr/local/bin/assume-role	/usr/local/bin/assume-role
 COPY --from=kubectl  	/tmp/kubectl			/usr/local/bin/kubectl
 #COPY --from=kops	/tmp/kops			/usr/local/bin/kops
 #COPY --from=kafka       /opt/kafka			/opt/kafka
 #RUN chown -R kafka: /opt/kafka
 
-#COPY --from=sessionmanagerplugin /usr/local/sessionmanagerplugin/bin/session-manager-plugin /usr/local/bin/
+COPY --from=sessionmanagerplugin /usr/local/sessionmanagerplugin/bin/session-manager-plugin /usr/local/bin/
 
 ### copy all prebuilded tools from other docker images
 ### zsh installation
@@ -336,12 +356,12 @@ RUN /usr/local/bin/settings-and-configs.sh
 COPY git-* /usr/local/bin/
 
 ARG HELM_VERSION
-RUN if [ "$HELM_VERSION" != "" ]; then for version in $HELM_VERSION; do helmenv install "$version"; helmenv local "$version"; done; fi
+RUN if [ "$HELM_VERSION" != "" ]; then for version in $HELM_VERSION; do sudo helmenv install "$version"; sudo helmenv local "$version"; done; fi
 
 ARG TERRAFORM_VERSION
-RUN if [ "$TERRAFORM_VERSION" != "" ]; then for version in $TERRAFORM_VERSION; do tfenv install "$version"; tfenv use "$version"; done; fi
+RUN if [ "$TERRAFORM_VERSION" != "" ]; then for version in $TERRAFORM_VERSION; do sudo tfenv install "$version"; sudo tfenv use "$version"; done; fi
 
 ARG TERRAGRUNT_VERSION
-RUN if [ "$TERRAGRUNT_VERSION" != "" ]; then for version in $TERRAGRUNT_VERSION; do export PATH=$PATH:/usr/local/bin:/usr/local/tgenv/bin; tgenv install "$version"; tgenv use "$version"; done; fi
+RUN if [ "$TERRAGRUNT_VERSION" != "" ]; then for version in $TERRAGRUNT_VERSION; do sudo tgenv install "$version"; sudo tgenv use "$version"; done; fi
 
-RUN curl -sfL https://direnv.net/install.sh | bash
+RUN apk --no-cache --update add -X http://dl-cdn.alpinelinux.org/alpine/edge/testing direnv direnv-doc
