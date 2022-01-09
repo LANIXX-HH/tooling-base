@@ -32,7 +32,7 @@ jobs:
       run: |
         docker pull --platform linux/arm64/v8 ghcr.io/lanixx-hh/tooling-base:latest-arm64 || /bin/true
         docker run --privileged --rm tonistiigi/binfmt --install all
-        docker build --platform linux/arm64/v8 --tag ghcr.io/lanixx-hh/tooling-base:latest-arm64 --cache-from ghcr.io/lanixx-hh/tooling-base:latest-arm64 --build-arg TAG=arm64-edge --push .
+        docker build --platform linux/arm64/v8 --tag ghcr.io/lanixx-hh/tooling-base:latest-arm64 --cache-from ghcr.io/lanixx-hh/tooling-base:latest-arm64 --build-arg ARCH=arm64 --push .
 
   publish-tooling-amd64:
     runs-on: ubuntu-latest
@@ -54,5 +54,5 @@ jobs:
     - name: Build tooling image for amd64
       run: |
         docker pull --platform linux/amd64  ghcr.io/lanixx-hh/tooling-base:latest-amd64 || /bin/true
-        docker build --platform linux/amd64 --tag ghcr.io/lanixx-hh/tooling-base:latest-amd64 --tag ghcr.io/lanixx-hh/tooling-base:latest --cache-from ghcr.io/lanixx-hh/tooling-base:latest-amd64 --push .
+        docker build --platform linux/amd64 --tag ghcr.io/lanixx-hh/tooling-base:latest-amd64 --tag ghcr.io/lanixx-hh/tooling-base:latest --cache-from ghcr.io/lanixx-hh/tooling-base:latest-amd64 --build-arg ARCH=amd64 --push .
 
