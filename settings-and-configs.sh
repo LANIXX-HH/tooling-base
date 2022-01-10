@@ -4,6 +4,8 @@
 echo "set mouse=" >> /etc/vim/vimrc
 echo "set ttymouse=" >> /etc/vim/vimrc
 
+rm -rf /etc/zsh*
+
 # zshrc
 mkdir -p /etc/zsh 
 
