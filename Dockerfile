@@ -319,7 +319,7 @@ COPY --from=kubectl  	/tmp/kubectl			/usr/local/bin/kubectl
 #COPY --from=kafka       /opt/kafka			/opt/kafka
 #RUN chown -R kafka: /opt/kafka
 
-#COPY --from=sessionmanagerplugin /usr/local/sessionmanagerplugin/bin/session-manager-plugin /usr/local/bin/
+COPY --from=sessionmanagerplugin /usr/local/sessionmanagerplugin/bin/session-manager-plugin /usr/local/bin/
 
 ### copy all prebuilded tools from other docker images
 ### zsh installation
