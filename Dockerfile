@@ -71,6 +71,7 @@ RUN yum install -y -q \
   tzdata \
   unzip \
   util-linux \
+  util-linux-user \
   vim \
   wget \
   zsh 
