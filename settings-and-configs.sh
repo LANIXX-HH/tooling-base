@@ -450,3 +450,6 @@ Cn0KdHlwZXNldCAtZyBQT1dFUkxFVkVMOUtfQ09ORklHX0ZJTEU9JHskeyglKTotJXh9OmF9Cigo
 ICR7I3AxMGtfY29uZmlnX29wdHN9ICkpICYmIHNldG9wdCAke3AxMGtfY29uZmlnX29wdHNbQF19
 CididWlsdGluJyAndW5zZXQnICdwMTBrX2NvbmZpZ19vcHRzJwo=
 EOF
+
+ln -s /etc/zsh/zshrc /etc/zshrc
+chsh -s $(which zsh) $(whoami)
