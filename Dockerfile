@@ -155,11 +155,14 @@ RUN git clone https://github.com/yuya-takeyama/helmenv.git /usr/local/helmenv
 #  && apk del --purge .build-deps
 
 FROM ubuntu:20.04 as sessionmanagerplugin
+ARG ARCH
 
-RUN apt-get update \
-    && apt-get install -y curl \
-    && curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_arm64/session-manager-plugin.deb" -o "session-manager-plugin.deb" \
-    && dpkg -i "session-manager-plugin.deb"
+RUN apt-get update && apt-get install -y curl \
+  && if ( test "$ARCH" = "arm64"); then \
+    curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_${ARCH}/session-manager-plugin.deb" -o "session-manager-plugin.deb"; \
+  else \
+    curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"; \
+  fi && dpkg -i "session-manager-plugin.deb"
 
 ### build final image
 FROM base as final
