@@ -154,15 +154,16 @@ RUN git clone https://github.com/yuya-takeyama/helmenv.git /usr/local/helmenv
 #  && rm -rf /tmp/* \
 #  && apk del --purge .build-deps
 
-FROM ubuntu:20.04 as sessionmanagerplugin
-ARG ARCH
-
-RUN apt-get update && apt-get install -y curl \
-  && if ( test "$ARCH" = "arm64"); then \
-    curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_${ARCH}/session-manager-plugin.deb" -o "session-manager-plugin.deb"; \
-  else \
-    curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"; \
-  fi && dpkg -i "session-manager-plugin.deb"
+# disable sessionmanager installation
+### FROM ubuntu:20.04 as sessionmanagerplugin
+### ARG ARCH
+### 
+### RUN apt-get update && apt-get install -y curl \
+###   && if ( test "$ARCH" = "arm64"); then \
+###     curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_${ARCH}/session-manager-plugin.deb" -o "session-manager-plugin.deb"; \
+###   else \
+###     curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"; \
+###   fi && dpkg -i "session-manager-plugin.deb"
 
 ### build final image
 FROM base as final
@@ -288,7 +289,7 @@ RUN curl --silent --location --output /usr/local/bin/direnv "$(curl -s https://a
   && chmod +x /usr/local/bin/direnv
 
 ### tfsec
-RUN curl --silent --location --output /usr/local/bin/tfsec "$(curl -s https://api.github.com/repos/aquasecurity/tfsec/releases/latest  | jq -r ' .assets[] | .browser_download_url' | grep "linux-${ARCH}$")" \
+RUN curl --silent --location --output /usr/local/bin/tfsec "$(curl -s https://api.github.com/repos/aquasecurity/tfsec/releases/latest  | jq -r ' .assets[] | .browser_download_url' | grep "tfsec-linux-${ARCH}$")" \
   && chmod +x /usr/local/bin/tfsec
 
 #tflint
@@ -322,7 +323,7 @@ COPY --from=kubectl  	/tmp/kubectl			/usr/local/bin/kubectl
 #COPY --from=kafka       /opt/kafka			/opt/kafka
 #RUN chown -R kafka: /opt/kafka
 
-COPY --from=sessionmanagerplugin /usr/local/sessionmanagerplugin/bin/session-manager-plugin /usr/local/bin/
+#COPY --from=sessionmanagerplugin /usr/local/sessionmanagerplugin/bin/session-manager-plugin /usr/local/bin/
 
 ### copy all prebuilded tools from other docker images
 ### zsh installation
