@@ -299,6 +299,12 @@ RUN curl --silent --location --output tflint.zip -s "$(curl -s https://api.githu
   && mv tflint /usr/local/bin \
   && rm tflint.zip
 
+#aws cdk
+### configure yum repo for nodejs
+RUN curl --silent --location https://rpm.nodesource.com/setup_16.x | bash - \
+  && yum install -q -y nodejs \
+  && npm install -g aws-cdk
+
 COPY --from=terraform	/usr/local/tfenv/bin		/usr/local/tfenv/bin
 COPY --from=terraform	/usr/local/tfenv/lib		/usr/local/tfenv/lib
 COPY --from=terraform	/usr/local/tfenv/libexec	/usr/local/tfenv/libexec
