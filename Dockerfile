@@ -306,7 +306,7 @@ RUN curl --silent --location https://rpm.nodesource.com/setup_16.x | bash - \
   && npm install -g aws-cdk
 
 #miller
-RUN curl --silent --location --output miller.zip -s "$( curl -s https://api.github.com/repos/johnkerl/miller/releases/latest | jq -r ' .assets[] | .browser_download_url' | grep "linux-${ARCH}" )" \
+RUN curl --silent --location --output miller.tar.gz -s "$( curl -s https://api.github.com/repos/johnkerl/miller/releases/latest | jq -r ' .assets[] | .browser_download_url' | grep "linux-${ARCH}.tar.gz" )" \
   && tar -xvzf miller.tar.gz "miller*/mlr" -C . \
   && mv miller*/mlr /usr/local/bin \
   && rm -rf miller*
