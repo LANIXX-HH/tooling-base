@@ -305,6 +305,14 @@ RUN curl --silent --location https://rpm.nodesource.com/setup_16.x | bash - \
   && yum install -q -y nodejs \
   && npm install -g aws-cdk
 
+#miller
+RUN curl --silent --location --output tflint.zip -s "$( curl -s https://api.github.com/repos/johnkerl/miller/releases/latest | jq -r ' .assets[] | .browser_download_url' | grep "linux-${ARCH}" )" \
+  && tar -xvzf miller.tar.gz "miller*/mlr" -C . \
+  && mv miller*/mlr /usr/local/bin \
+  && rm -rf miller*
+
+RUN wget -q -O miller.rpm https://github.com/johnkerl/miller/releases/download/v6.7.0/miller-6.7.0-linux-${ARCH}.rpm
+
 COPY --from=terraform	/usr/local/tfenv/bin		/usr/local/tfenv/bin
 COPY --from=terraform	/usr/local/tfenv/lib		/usr/local/tfenv/lib
 COPY --from=terraform	/usr/local/tfenv/libexec	/usr/local/tfenv/libexec
