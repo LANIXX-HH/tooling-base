@@ -311,7 +311,8 @@ RUN curl --silent --location --output miller.tar.gz -s "$( curl -s https://api.g
   && mv miller*/mlr /usr/local/bin \
   && rm -rf miller*
 
-RUN wget -q -O miller.rpm https://github.com/johnkerl/miller/releases/download/v6.7.0/miller-6.7.0-linux-${ARCH}.rpm
+RUN curl --silent --location --output tf-graph-beauty.tar.gz $(curl -s https://api.github.com/repos/pcasteran/terraform-graph-beautifier/releases/latest | jq -r ' .assets[] | .browser_download_url' | grep "linux_${ARCH}.tar.gz$") \
+  && tar -xvzf tf-graph-beauty.tar.gz terraform-graph-beautifier -C /usr/local/bin/terraform-graph-beautifier
 
 COPY --from=terraform	/usr/local/tfenv/bin		/usr/local/tfenv/bin
 COPY --from=terraform	/usr/local/tfenv/lib		/usr/local/tfenv/lib
