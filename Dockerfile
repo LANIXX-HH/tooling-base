@@ -154,17 +154,6 @@ RUN git clone https://github.com/yuya-takeyama/helmenv.git /usr/local/helmenv
 #  && rm -rf /tmp/* \
 #  && apk del --purge .build-deps
 
-# disable sessionmanager installation
-### FROM ubuntu:20.04 as sessionmanagerplugin
-### ARG ARCH
-### 
-### RUN apt-get update && apt-get install -y curl \
-###   && if ( test "$ARCH" = "arm64"); then \
-###     curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_${ARCH}/session-manager-plugin.deb" -o "session-manager-plugin.deb"; \
-###   else \
-###     curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"; \
-###   fi && dpkg -i "session-manager-plugin.deb"
-
 ### build final image
 FROM base as final
 ARG ARCH
@@ -185,38 +174,6 @@ ENV LC_ALL en_US.UFT-8
 
 ### set default editor
 ENV EDITOR nvim
-
-### aws cli v2
-
-#ENV GLIBC_VER=2.31-r0
-
-# install glibc compatibility for alpine
-#RUN apk --no-cache add \
-#        binutils \
-#        curl \
-#    && curl -sL https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub -o /etc/apk/keys/sgerrand.rsa.pub \
-#    && curl -sLO https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${GLIBC_VER}/glibc-${GLIBC_VER}.apk \
-#    && curl -sLO https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${GLIBC_VER}/glibc-bin-${GLIBC_VER}.apk \
-#    && curl -sLO https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${GLIBC_VER}/glibc-i18n-${GLIBC_VER}.apk \
-#    && apk add --no-cache \
-#        glibc-${GLIBC_VER}.apk \
-#        glibc-bin-${GLIBC_VER}.apk \
-#        glibc-i18n-${GLIBC_VER}.apk \
-#    && /usr/glibc-compat/bin/localedef -i en_US -f UTF-8 en_US.UTF-8 \
-#    && curl -sL https://awscli.amazonaws.com/awscli-exe-linux-${UNAME}.zip -o awscliv2.zip \
-#    && unzip awscliv2.zip \
-#    && aws/install \
-#    && rm -rf \
-#        awscliv2.zip \
-#        aws \
-#        /usr/local/aws-cli/v2/*/dist/aws_completer \
-#        /usr/local/aws-cli/v2/*/dist/awscli/data/ac.index \
-#        /usr/local/aws-cli/v2/*/dist/awscli/examples \
-#        glibc-*.apk \
-#    && apk --no-cache del \
-#        binutils \
-#        curl \
-#    && rm -rf /var/cache/apk/*
 
 ### kubectx
 RUN wget -O /usr/local/bin/kubectx https://raw.githubusercontent.com/ahmetb/kubectx/master/kubectx \
@@ -311,6 +268,10 @@ RUN curl --silent --location --output miller.tar.gz -s "$( curl -s https://api.g
   && mv miller*/mlr /usr/local/bin \
   && rm -rf miller*
 
+#session-manager
+RUN sudo yum install -y https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_${ARCH}/session-manager-plugin.rpm
+
+#terraform graph beautifier
 RUN curl --silent --location --output tf-graph-beauty.tar.gz $(curl -s https://api.github.com/repos/pcasteran/terraform-graph-beautifier/releases/latest | jq -r ' .assets[] | .browser_download_url' | grep "linux_${ARCH}.tar.gz$") \
   && tar -xvzf tf-graph-beauty.tar.gz terraform-graph-beautifier \
   && mv terraform-graph-beautifier /usr/local/bin/
