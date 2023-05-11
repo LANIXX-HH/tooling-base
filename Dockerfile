@@ -249,27 +249,27 @@ RUN curl --silent --location --output /usr/local/bin/direnv "$(curl -s https://a
 RUN curl --silent --location --output /usr/local/bin/tfsec "$(curl -s https://api.github.com/repos/aquasecurity/tfsec/releases/latest  | jq -r ' .assets[] | .browser_download_url' | grep "tfsec-linux-${ARCH}$")" \
   && chmod +x /usr/local/bin/tfsec
 
-#tflint
+### tflint
 RUN curl --silent --location --output tflint.zip -s "$(curl -s https://api.github.com/repos/terraform-linters/tflint/releases/latest | jq -r ' .assets[] | .browser_download_url' | grep "linux_${ARCH}" )" \
   && unzip tflint.zip \
   && chmod +x tflint \
   && mv tflint /usr/local/bin \
   && rm tflint.zip
 
-#aws cdk
+### aws cdk
 ### configure yum repo for nodejs
 RUN curl --silent --location https://rpm.nodesource.com/setup_16.x | bash - \
   && yum install -q -y nodejs \
   && npm install -g aws-cdk
 
-#miller
+### miller
 RUN curl --silent --location --output miller.tar.gz -s "$( curl -s https://api.github.com/repos/johnkerl/miller/releases/latest | jq -r ' .assets[] | .browser_download_url' | grep "linux-${ARCH}.tar.gz" )" \
   && tar -xvzf miller.tar.gz "miller*/mlr" -C . \
   && mv miller*/mlr /usr/local/bin \
   && rm -rf miller*
 
-#session-manager
-RUN sudo yum install -y https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_${ARCH}/session-manager-plugin.rpm
+### session-manager
+RUN if ( test "$ARCH" == "amd64" ); then SM_ARCH=64bit; else SM_ARCH=arm64; fi && sudo yum install -y https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_${SM_ARCH}/session-manager-plugin.rpm
 
 #terraform graph beautifier
 RUN curl --silent --location --output tf-graph-beauty.tar.gz $(curl -s https://api.github.com/repos/pcasteran/terraform-graph-beautifier/releases/latest | jq -r ' .assets[] | .browser_download_url' | grep "linux_${ARCH}.tar.gz$") \
