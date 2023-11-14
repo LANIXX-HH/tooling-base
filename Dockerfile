@@ -258,12 +258,13 @@ RUN curl --silent --location --output tflint.zip -s "$(curl -s https://api.githu
 
 ### aws cdk
 ### configure yum repo for nodejs
+### 17 version is latest possible because of ldd (2.26) version for current image amazon/aws-cli
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash \
   && export NVM_DIR="$HOME/.nvm" \
   && [ -s "$NVM_DIR/nvm.sh" ] \
   && . "$NVM_DIR/nvm.sh" \
-  && nvm install stable \
-  && nvm use stable \
+  && nvm install 17 \
+  && nvm use 17 \
   && npm install -g aws-cdk
 
 ### miller
