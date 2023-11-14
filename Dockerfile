@@ -232,7 +232,7 @@ RUN curl --silent --location "https://github.com/weaveworks/eksctl/releases/late
   && sudo mv /tmp/eksctl /usr/local/bin
 
 ### hub
-RUN curl --silent --location --output hub.tgz -s "$(curl -s https://api.github.com/repos/github/hub/releases/latest | jq -r ' .assets[] | .browser_download_url' | grep "linux-${ARCH}" )" \
+RUN curl --silent --location --output hub.tgz -s "$(curl -s https://api.github.com/repos/mislav/hub/releases/latest | jq -r ' .assets[] | .browser_download_url' | grep "linux-${ARCH}" )" \
   && tar -xvzf hub.tgz $(tar -tzf hub.tgz | grep bin/hub) \
   && mv hub-*/bin/hub /usr/local/bin \
   && rm -rf hub-linux-${ARCH}* hub.tgz
