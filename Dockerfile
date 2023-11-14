@@ -258,8 +258,12 @@ RUN curl --silent --location --output tflint.zip -s "$(curl -s https://api.githu
 
 ### aws cdk
 ### configure yum repo for nodejs
-RUN curl --silent --location https://rpm.nodesource.com/setup_16.x | bash - \
-  && yum install -q -y nodejs \
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash \
+  && export NVM_DIR="$HOME/.nvm" \
+  && [ -s "$NVM_DIR/nvm.sh" ] \
+  && . "$NVM_DIR/nvm.sh" \
+  && nvm install stable \
+  && nvm use stable \
   && npm install -g aws-cdk
 
 ### miller
