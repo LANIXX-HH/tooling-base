@@ -176,7 +176,7 @@ ENV LC_ALL en_US.UFT-8
 ENV EDITOR nvim
 
 ### helm
-RUN cd curl -fsSL -o /tmp/get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 \
+RUN curl -fsSL -o /tmp/get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 \
     && chmod 700 /tmp/get_helm.sh \
     && /tmp/get_helm.sh \
     && rm /tmp/get_helm.sh
