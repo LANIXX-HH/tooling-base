@@ -130,8 +130,6 @@ LABEL name="kafka" version=${KAFKA_VERSION}
 RUN mkdir -p /opt && curl -sSL "https://archive.apache.org/dist/kafka/${KAFKA_VERSION}/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz" \
   | tar -xzf - -C /opt \
   && mv /opt/kafka_${SCALA_VERSION}-${KAFKA_VERSION} /opt/kafka \
-  && adduser -s /sbin/nologin kafka \
-  && chown -R kafka: /opt/kafka \
   && rm -rf /tmp/* 
 
 ### build final image
@@ -280,7 +278,7 @@ RUN ln -s /usr/local/tgenv/bin/terragrunt /usr/local/bin/terragrunt \
 COPY --from=kubectl  	/tmp/kubectl			/usr/local/bin/kubectl
 #COPY --from=kops	/tmp/kops			/usr/local/bin/kops
 COPY --from=kafka       /opt/kafka			/opt/kafka
-RUN chown -R kafka: /opt/kafka
+RUN  adduser -s /sbin/nologin kafka && chown -R kafka: /opt/kafka
 
 ### copy all prebuilded tools from other docker images
 ### zsh installation
