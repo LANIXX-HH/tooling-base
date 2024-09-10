@@ -170,7 +170,7 @@ RUN go get github.com/remind101/assume-role && mv /tmp/go/bin/assume-role /usr/l
 #  && rm -rf /tmp/* \
 #  && apk del --purge .build-deps
 
-FROM ubuntu:20.04 as sessionmanagerplugin
+FROM ubuntu:24.04 as sessionmanagerplugin
 
 RUN apt-get update \
     && apt-get install -y curl \
