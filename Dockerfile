@@ -4,9 +4,9 @@
 ### Base
 # Setup build arguments with default versions
 ARG KOPS_VERSION=${KOPS_VERSION:-v1.25.0}
-ARG KAFKA_VERSION=${KAFKA_VERSION:-2.2.2}
-ARG SCALA_VERSION=${SCALA_VERSION:-2.12}
-ARG FLY=${FLY:-7.9.0}
+ARG KAFKA_VERSION=${KAFKA_VERSION:-3.8.0}
+ARG SCALA_VERSION=${SCALA_VERSION:-2.13}
+ARG FLY=${FLY:-7.11.2}
 ARG HELM_VERSION=${HELM_VERSION:-"latest"}
 ARG TERRAGRUNT_VERSION=${TERRAGRUNT_VERSION:-"latest"}
 ARG TERRAFORM_VERSION=${TERRAFORM_VERSION:-"latest"}
@@ -98,18 +98,6 @@ ARG ARCH
 RUN git clone https://github.com/cunymatthieu/tgenv.git /usr/local/tgenv
 RUN find /usr/local/tgenv -type f -print0 | xargs -0 sed -i "s/amd64/${ARCH}/g"
 
-#terraform-providers: kafka, fm, mongodbatlas, ldap
-#terraform-providers: kafka
-
-#FROM base AS terraform-provider-kafka
-#ARG ARCH
-#WORKDIR /
-#COPY gh-dl-release.sh .
-#ARG TF_KAFKA_PROVIDER_NAME
-#RUN curl --silent --location --output ${TF_KAFKA_PROVIDER_NAME}_linux_${ARCH}.zip -s "$(curl -s https://api.github.com/repos/Mongey/terraform-provider-kafka/releases/latest | jq -r ' .assets[] | .browser_download_url' | grep "linux_$ARCH")" \
-# && unzip ${TF_KAFKA_PROVIDER_NAME}_linux_${ARCH}.zip > /dev/null \
-# && mv ${TF_KAFKA_PROVIDER_NAME}_v* ${TF_KAFKA_PROVIDER_NAME}
-
 ### kubectl
 FROM base AS kubectl
 ARG ARCH
@@ -117,11 +105,6 @@ WORKDIR /tmp
 RUN curl --silent --location --output kubectl \ 
   https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/${ARCH}/kubectl \
   && chmod +x kubectl
-
-### helm
-#FROM base AS helm
-#ARG ARCH
-#RUN git clone https://github.com/yuya-takeyama/helmenv.git /usr/local/helmenv
 
 #### kops
 #FROM base AS kops
@@ -137,22 +120,19 @@ RUN curl --silent --location --output kubectl \
 #  && chmod +x kops
 
 ### kafka
-#FROM base AS kafka
-#ARG ARCH
-#ARG KAFKA_VERSION
-#ARG SCALA_VERSION
-#
-#LABEL name="kafka" version=${KAFKA_VERSION}
-#
-#RUN apk add --no-cache openjdk8-jre bash docker coreutils su-exec
-#RUN apk add --no-cache -t .build-deps curl ca-certificates jq \
-#  && mkdir -p /opt && curl -sSL "https://archive.apache.org/dist/kafka/${KAFKA_VERSION}/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz" \
-#  | tar -xzf - -C /opt \
-#  && mv /opt/kafka_${SCALA_VERSION}-${KAFKA_VERSION} /opt/kafka \
-#  && adduser -DH -s /sbin/nologin kafka \
-#  && chown -R kafka: /opt/kafka \
-#  && rm -rf /tmp/* \
-#  && apk del --purge .build-deps
+FROM base AS kafka
+ARG ARCH
+ARG KAFKA_VERSION
+ARG SCALA_VERSION
+
+LABEL name="kafka" version=${KAFKA_VERSION}
+
+RUN mkdir -p /opt && curl -sSL "https://archive.apache.org/dist/kafka/${KAFKA_VERSION}/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz" \
+  | tar -xzf - -C /opt \
+  && mv /opt/kafka_${SCALA_VERSION}-${KAFKA_VERSION} /opt/kafka \
+  && adduser -s /sbin/nologin kafka \
+  && chown -R kafka: /opt/kafka \
+  && rm -rf /tmp/* 
 
 ### build final image
 FROM base as final
@@ -189,12 +169,6 @@ RUN wget -O /usr/local/bin/kubectx https://raw.githubusercontent.com/ahmetb/kube
 ### final steps
 RUN curl --silent -Lo /usr/local/bin/kind "https://kind.sigs.k8s.io/dl/v0.9.0/kind-$(uname)-${ARCH}" && chmod +x /usr/local/bin/kind
 #RUN curl -Lo /usr/local/bin/devspace "https://github.com/devspace-cloud/devspace/releases/download/v5.0.3/devspace-linux-${ARCH}" && chmod +x /usr/local/bin/devspace
-
-#COPY --from=helm	/usr/local/helmenv/bin		/usr/local/helmenv/bin
-#COPY --from=helm 	/usr/local/helmenv/libexec	/usr/local/helmenv/libexec
-#ARG HELM_VERSION
-#RUN ln -s /usr/local/helmenv/bin/helmenv /usr/local/bin/helmenv \
-#  && ln -s /usr/local/helmenv/bin/helm /usr/local/bin/helm
 
 ### install helmfile
 RUN curl --silent --location --output /usr/local/bin/helmfile $( curl -s https://api.github.com/repos/roboll/helmfile/releases | jq -r ' .[].assets[].browser_download_url' | grep linux_${ARCH} | head -1) \
@@ -292,9 +266,6 @@ COPY --from=terraform	/usr/local/tfenv/lib		/usr/local/tfenv/lib
 COPY --from=terraform	/usr/local/tfenv/libexec	/usr/local/tfenv/libexec
 COPY --from=terraform	/usr/local/tfenv/share		/usr/local/tfenv/share
 
-#ARG TF_KAFKA_PROVIDER_NAME
-#COPY --from=terraform-provider-kafka /${TF_KAFKA_PROVIDER_NAME} /usr/local/terraform-plugins/terraform-provider-kafka
-
 RUN ln -s /usr/local/tfenv/bin/tfenv /usr/local/bin/tfenv \
   && /usr/local/bin/tfenv install ${TERRAFORM_VERSION} \
   && export TERRAFORM_VERSION=$(tfenv list-remote | head -1) \
@@ -308,10 +279,8 @@ RUN ln -s /usr/local/tgenv/bin/terragrunt /usr/local/bin/terragrunt \
 
 COPY --from=kubectl  	/tmp/kubectl			/usr/local/bin/kubectl
 #COPY --from=kops	/tmp/kops			/usr/local/bin/kops
-#COPY --from=kafka       /opt/kafka			/opt/kafka
-#RUN chown -R kafka: /opt/kafka
-
-#COPY --from=sessionmanagerplugin /usr/local/sessionmanagerplugin/bin/session-manager-plugin /usr/local/bin/
+COPY --from=kafka       /opt/kafka			/opt/kafka
+RUN chown -R kafka: /opt/kafka
 
 ### copy all prebuilded tools from other docker images
 ### zsh installation
@@ -327,9 +296,6 @@ COPY settings-and-configs.sh /usr/local/bin/settings-and-configs.sh
 RUN /usr/local/bin/settings-and-configs.sh
 
 COPY git-* /usr/local/bin/
-
-#ARG HELM_VERSION
-#RUN if [ "$HELM_VERSION" != "" ]; then for version in $HELM_VERSION; do helmenv install "$version"; helmenv local "$version"; done; fi
 
 ARG TERRAFORM_VERSION
 RUN if [ "$TERRAFORM_VERSION" != "" ]; then for version in $TERRAFORM_VERSION; do tfenv install "$version"; tfenv use "$version"; done; fi
