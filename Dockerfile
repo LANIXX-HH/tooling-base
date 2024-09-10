@@ -331,10 +331,10 @@ COPY git-* /usr/local/bin/
 #ARG HELM_VERSION
 #RUN if [ "$HELM_VERSION" != "" ]; then for version in $HELM_VERSION; do helmenv install "$version"; helmenv local "$version"; done; fi
 
-ARG TERRAFORM_VERSION
-RUN if [ "$TERRAFORM_VERSION" != "" ]; then for version in $TERRAFORM_VERSION; do tfenv install "$version"; tfenv use "$version"; done; fi
+#ARG TERRAFORM_VERSION
+#RUN if [ "$TERRAFORM_VERSION" != "" ]; then for version in $TERRAFORM_VERSION; do tfenv install "$version"; tfenv use "$version"; done; fi
 
-ARG TERRAGRUNT_VERSION
-RUN if [ "$TERRAGRUNT_VERSION" != "" ]; then for version in $TERRAGRUNT_VERSION; do export PATH=$PATH:/usr/local/bin:/usr/local/tgenv/bin; tgenv install "$version"; tgenv use "$version"; done; fi
+#ARG TERRAGRUNT_VERSION
+#RUN if [ "$TERRAGRUNT_VERSION" != "" ]; then for version in $TERRAGRUNT_VERSION; do export PATH=$PATH:/usr/local/bin:/usr/local/tgenv/bin; tgenv install "$version"; tgenv use "$version"; done; fi
 
 RUN curl -sfL https://direnv.net/install.sh | bash
