@@ -119,9 +119,9 @@ RUN curl --silent --location --output kubectl \
   && chmod +x kubectl
 
 ### helm
-FROM base AS helm
-ARG ARCH
-RUN git clone https://github.com/yuya-takeyama/helmenv.git /usr/local/helmenv
+#FROM base AS helm
+#ARG ARCH
+#RUN git clone https://github.com/yuya-takeyama/helmenv.git /usr/local/helmenv
 
 #### kops
 #FROM base AS kops
@@ -174,6 +174,12 @@ ENV LC_ALL en_US.UFT-8
 
 ### set default editor
 ENV EDITOR nvim
+
+### helm
+RUN cd curl -fsSL -o /tmp/get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 \
+    && chmod 700 /tmp/get_helm.sh \
+    && /tmp/get_helm.sh \
+    && rm /tmp/get_helm.sh
 
 ### kubectx
 RUN wget -O /usr/local/bin/kubectx https://raw.githubusercontent.com/ahmetb/kubectx/master/kubectx \
