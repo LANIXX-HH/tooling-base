@@ -328,8 +328,8 @@ RUN /usr/local/bin/settings-and-configs.sh
 
 COPY git-* /usr/local/bin/
 
-ARG HELM_VERSION
-RUN if [ "$HELM_VERSION" != "" ]; then for version in $HELM_VERSION; do helmenv install "$version"; helmenv local "$version"; done; fi
+#ARG HELM_VERSION
+#RUN if [ "$HELM_VERSION" != "" ]; then for version in $HELM_VERSION; do helmenv install "$version"; helmenv local "$version"; done; fi
 
 ARG TERRAFORM_VERSION
 RUN if [ "$TERRAFORM_VERSION" != "" ]; then for version in $TERRAFORM_VERSION; do tfenv install "$version"; tfenv use "$version"; done; fi
