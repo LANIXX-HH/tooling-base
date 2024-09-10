@@ -190,11 +190,11 @@ RUN wget -O /usr/local/bin/kubectx https://raw.githubusercontent.com/ahmetb/kube
 RUN curl --silent -Lo /usr/local/bin/kind "https://kind.sigs.k8s.io/dl/v0.9.0/kind-$(uname)-${ARCH}" && chmod +x /usr/local/bin/kind
 #RUN curl -Lo /usr/local/bin/devspace "https://github.com/devspace-cloud/devspace/releases/download/v5.0.3/devspace-linux-${ARCH}" && chmod +x /usr/local/bin/devspace
 
-COPY --from=helm	/usr/local/helmenv/bin		/usr/local/helmenv/bin
-COPY --from=helm 	/usr/local/helmenv/libexec	/usr/local/helmenv/libexec
-ARG HELM_VERSION
-RUN ln -s /usr/local/helmenv/bin/helmenv /usr/local/bin/helmenv \
-  && ln -s /usr/local/helmenv/bin/helm /usr/local/bin/helm
+#COPY --from=helm	/usr/local/helmenv/bin		/usr/local/helmenv/bin
+#COPY --from=helm 	/usr/local/helmenv/libexec	/usr/local/helmenv/libexec
+#ARG HELM_VERSION
+#RUN ln -s /usr/local/helmenv/bin/helmenv /usr/local/bin/helmenv \
+#  && ln -s /usr/local/helmenv/bin/helm /usr/local/bin/helm
 
 ### install helmfile
 RUN curl --silent --location --output /usr/local/bin/helmfile $( curl -s https://api.github.com/repos/roboll/helmfile/releases | jq -r ' .[].assets[].browser_download_url' | grep linux_${ARCH} | head -1) \
