@@ -7,9 +7,9 @@ ARG KOPS_VERSION=${KOPS_VERSION:-v1.25.0}
 ARG KAFKA_VERSION=${KAFKA_VERSION:-2.2.2}
 ARG SCALA_VERSION=${SCALA_VERSION:-2.12}
 ARG FLY=${FLY:-7.9.0}
-ARG HELM_VERSION=${HELM_VERSION:-"3.10.3"}
-ARG TERRAGRUNT_VERSION=${TERRAGRUNT_VERSION:-"0.67.4"}
-ARG TERRAFORM_VERSION=${TERRAFORM_VERSION:-"1.10.0"}
+ARG HELM_VERSION=${HELM_VERSION:-"latest"}
+ARG TERRAGRUNT_VERSION=${TERRAGRUNT_VERSION:-"latest"}
+ARG TERRAFORM_VERSION=${TERRAFORM_VERSION:-"latest"}
 
 ARG TF_KAFKA_PROVIDER_NAME=terraform-provider-kafka
 
@@ -331,10 +331,10 @@ COPY git-* /usr/local/bin/
 #ARG HELM_VERSION
 #RUN if [ "$HELM_VERSION" != "" ]; then for version in $HELM_VERSION; do helmenv install "$version"; helmenv local "$version"; done; fi
 
-#ARG TERRAFORM_VERSION
-#RUN if [ "$TERRAFORM_VERSION" != "" ]; then for version in $TERRAFORM_VERSION; do tfenv install "$version"; tfenv use "$version"; done; fi
+ARG TERRAFORM_VERSION
+RUN if [ "$TERRAFORM_VERSION" != "" ]; then for version in $TERRAFORM_VERSION; do tfenv install "$version"; tfenv use "$version"; done; fi
 
-#ARG TERRAGRUNT_VERSION
-#RUN if [ "$TERRAGRUNT_VERSION" != "" ]; then for version in $TERRAGRUNT_VERSION; do export PATH=$PATH:/usr/local/bin:/usr/local/tgenv/bin; tgenv install "$version"; tgenv use "$version"; done; fi
+ARG TERRAGRUNT_VERSION
+RUN if [ "$TERRAGRUNT_VERSION" != "" ]; then for version in $TERRAGRUNT_VERSION; do export PATH=$PATH:/usr/local/bin:/usr/local/tgenv/bin; tgenv install "$version"; tgenv use "$version"; done; fi
 
 RUN curl -sfL https://direnv.net/install.sh | bash
