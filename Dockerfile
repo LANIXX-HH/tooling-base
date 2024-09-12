@@ -38,6 +38,8 @@ RUN yum install -y -q \
   findutils \
   fzf \
   git \
+  glibc-langpack-en \
+  glibc-locale-source \
   grep \
   groff \
   htop \
@@ -74,7 +76,9 @@ RUN yum install -y -q \
   util-linux-user \
   vim \
   wget \
-  zsh 
+  zsh
+
+RUN localedef --no-archive -i en_US -f UTF-8 en_US.UTF-8
 
 ### install pip packages from requirements.txt and awscli v2
 ### disabled: ansible-vault
