@@ -259,9 +259,9 @@ RUN curl --silent --location --output miller.tar.gz -s "$( curl -s https://api.g
 RUN if ( test "$ARCH" == "amd64" ); then SM_ARCH=64bit; else SM_ARCH=arm64; fi && sudo yum install -y https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_${SM_ARCH}/session-manager-plugin.rpm
 
 ### granted / assume
-RUN if ( test "$ARCH" == "amd64" ); then SM_ARCH=x86_64; else SM_ARCH=arm64; fi && curl -OL releases.commonfate.io/granted/v0.31.0/granted_0.31.0_linux_${ARCH}.tar.gz \
-  && tar -zxvf ./granted_0.31.0_linux_${ARCH}.tar.gz -C /usr/local/bin/ \
-  && rm ./granted_0.31.0_linux_${ARCH}.tar.gz
+RUN if ( test "$ARCH" == "amd64" ); then SM_ARCH=x86_64; else SM_ARCH=arm64; fi && curl -OL releases.commonfate.io/granted/v0.31.0/granted_0.31.0_linux_${SM_ARCH}.tar.gz \
+  && tar -zxvf ./granted_0.31.0_linux_${SM_ARCH}.tar.gz -C /usr/local/bin/ \
+  && rm ./granted_0.31.0_linux_${SM_ARCH}.tar.gz
 
 #terraform graph beautifier
 RUN curl --silent --location --output tf-graph-beauty.tar.gz $(curl -s https://api.github.com/repos/pcasteran/terraform-graph-beautifier/releases/latest | jq -r ' .assets[] | .browser_download_url' | grep "linux_${ARCH}.tar.gz$") \
