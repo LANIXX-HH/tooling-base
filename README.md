@@ -10,17 +10,29 @@ based on alpine:edge
 
 base packages:
 
-* all k8s tools: kubectl, kubectx, kubens
-* helm with helmenv
-* helmfile
-* aws sso wrapper: aws-sso.py and additional help wrapper for shell session
-* terraform with tfenv
+* k8s tools: kubectl, kubectx, kubens, eksctl
+* helm
+* aws sso wrappers:
+  * aws-sso.py and additional help wrapper for shell session
+  * granted / assume
+* terraform:
+  * tflint, tfsec, tfenv
+  * terraform-graph-beautifier
 * terragrunt with tgenv
-* aws cli v2
+* aws:
+  * awscli v2
+  * aws-iam-authenticator
+  * aws cdk
+  * session manager
 * docker
 * docker-compose
-* git scripts: git-pair, git-solo, git-authors, git-time, git-pp, git-changelog
+* git
+  * hub
+  * scripts: git-pair, git-solo, git-authors, git-time, git-pp, git-changelog
 * zsh, zsh-completions, zsh-suggestions, powerline, oh-my-zsh
+* yq
+* jid
+* miller
 
 ##Useful Commands and Configs
 
