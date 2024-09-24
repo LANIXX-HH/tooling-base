@@ -177,7 +177,7 @@ RUN curl --silent --location --output /usr/local/bin/helmfile $( curl -s https:/
   && chmod +x /usr/local/bin/helmfile
 
 ### install terraform-docs
-RUN curl --silent --location --output /usr/local/bin/terraform-docs $( curl -s https://api.github.com/repos/terraform-docs/terraform-docs/releases | jq -r ' .[].assets[].browser_download_url' | grep linux-${ARCH} | head -1) \
+RUN curl -L $(curl -s https://api.github.com/repos/terraform-docs/terraform-docs/releases | jq -r ' .[].assets[].browser_download_url' | grep linux-${ARCH} | head -1) | tar xvz terraform-docs -C /usr/local/bin/terraform-docs \
   && chmod +x /usr/local/bin/terraform-docs
 
 ### tflint
