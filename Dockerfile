@@ -183,8 +183,10 @@ RUN curl --silent --location --output /usr/local/bin/helmfile $( curl -s https:/
   && chmod +x /usr/local/bin/helmfile
 
 ### install terraform-docs
-RUN curl -L $(curl -s https://api.github.com/repos/terraform-docs/terraform-docs/releases | jq -r ' .[].assets[].browser_download_url' | grep linux-${ARCH} | head -1) | tar xvz terraform-docs -C /usr/local/bin/ \
-  && chmod +x /usr/local/bin/terraform-docs
+RUN curl -L $(curl -s https://api.github.com/repos/terraform-docs/terraform-docs/releases | jq -r ' .[].assets[].browser_download_url' | grep linux-${ARCH} | head -1) | tar xvz -C /tmp \ 
+  && mv /tmp/terraform-docs /usr/local/bin \
+  && chmod +x /usr/local/bin/terraform-docs \
+  && rm /tmp/README.md
 
 ### tflint
 RUN curl --silent --location --output tflint.zip "$(curl -Ls https://api.github.com/repos/terraform-linters/tflint/releases/latest | grep -o -E "https://.+?_linux_${ARCH}.zip")" && unzip tflint.zip && rm tflint.zip \
