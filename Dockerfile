@@ -37,6 +37,7 @@ RUN yum install -y -q \
   dos2unix \
   findutils \
   fzf \
+  gettext \
   git \
   glibc-langpack-en \
   glibc-locale-source \
@@ -157,6 +158,11 @@ ENV LC_ALL en_US.UFT-8
 ### set default editor
 ENV EDITOR nvim
 
+### docker binary
+RUN if ( test "$ARCH" == "amd64" ); then D_ARCH=x86_64; else D_ARCH=aarch64; fi && curl -L https://download.docker.com/linux/static/stable/${D_ARCH}/docker-27.3.1.tgz | tar xvz -C /tmp/ \ 
+    && mv /tmp/docker/docker /usr/local/bin \
+    && rm -rf /tmp/docker
+
 ### helm
 RUN curl -fsSL -o /tmp/get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 \
     && chmod 700 /tmp/get_helm.sh \
@@ -177,7 +183,7 @@ RUN curl --silent --location --output /usr/local/bin/helmfile $( curl -s https:/
   && chmod +x /usr/local/bin/helmfile
 
 ### install terraform-docs
-RUN curl -L $(curl -s https://api.github.com/repos/terraform-docs/terraform-docs/releases | jq -r ' .[].assets[].browser_download_url' | grep linux-${ARCH} | head -1) | tar xvz terraform-docs -C /usr/local/bin/terraform-docs \
+RUN curl -L $(curl -s https://api.github.com/repos/terraform-docs/terraform-docs/releases | jq -r ' .[].assets[].browser_download_url' | grep linux-${ARCH} | head -1) | tar xvz terraform-docs -C /usr/local/bin/ \
   && chmod +x /usr/local/bin/terraform-docs
 
 ### tflint
