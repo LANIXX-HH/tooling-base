@@ -9,7 +9,6 @@ colorama
 dictdiffer
 distlib
 docker
-docker-compose
 docutils
 google-auth
 idna

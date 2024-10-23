@@ -16,8 +16,8 @@ ARG TF_KAFKA_PROVIDER_NAME=terraform-provider-kafka
 # build base image
 ARG ARCH=${ARCH:-${ARCH}}
 ARG UNAME=${UNAME:-${UNAME}}
-ARG IMAGE=${IMAGE:-amazon/aws-cli}
-ARG TAG=${TAG:-latest}
+ARG IMAGE=${IMAGE:-amazonlinux}
+ARG TAG=${TAG:-2023}
 FROM $IMAGE:$TAG as base
 ENV GLIBC_VER=2.31-r0 
 ARG ARCH
@@ -26,17 +26,14 @@ USER root
 
 ### install missing tools
 RUN yum install -y -q \
-  apparmor-profiles \
+  aws-cli \
   bash \
   bash-completion \
   bind-utils \
   ca-certificates \
-  coreutils \
-  curl \
   dialog \
   dos2unix \
   findutils \
-  fzf \
   gettext \
   git \
   glibc-langpack-en \
@@ -44,27 +41,22 @@ RUN yum install -y -q \
   grep \
   groff \
   htop \
-  joe \
   jq \
   less \
   mailx \
   make \
+  mariadb105 \
   mutt \
-  mysql-client \
   nano \
-  ncdu \
   ncurses \
-  neovim \
   nmap \
-  openjdk8-jre \
   openldap-clients \
-  openssh-client \
+  openssh-clients \
   openssl \
-  outils-sha256 \
   perl \
-  postgresql-client \
-  py3-pip \
-  python3 \
+  postgresql16 \
+  python3.11-pip \
+  python3.11 \
   rsync \
   sed \
   shadow \
@@ -84,12 +76,15 @@ RUN localedef --no-archive -i en_US -f UTF-8 en_US.UTF-8
 ### install pip packages from requirements.txt and awscli v2
 ### disabled: ansible-vault
 COPY requirements.txt /tmp
-RUN pip3 install --upgrade --force-reinstall pip \
-  && python3 -m ensurepip --upgrade \
-  && pip3 install --ignore-installed -r /tmp/requirements.txt
+RUN pip3.11 install --upgrade --force-reinstall pip \
+  && python3.11 -m ensurepip --upgrade \
+  && pip3.11 install --ignore-installed -r /tmp/requirements.txt
 
 WORKDIR /workspace
 CMD ["bash"]
+
+#docker-compose
+RUN curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m) -o /usr/bin/docker-compose && sudo chmod 755 /usr/bin/docker-compose && docker-compose --version 
 
 # terraform
 FROM base as terraform
