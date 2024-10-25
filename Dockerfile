@@ -248,8 +248,8 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | ba
   && export NVM_DIR="$HOME/.nvm" \
   && [ -s "$NVM_DIR/nvm.sh" ] \
   && . "$NVM_DIR/nvm.sh" \
-  && nvm install 17 \
-  && nvm use 17 \
+  && nvm install 22 \
+  && nvm use 22 \
   && npm install -g aws-cdk
 
 ### miller
