@@ -86,6 +86,12 @@ CMD ["bash"]
 #docker-compose
 RUN curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m) -o /usr/bin/docker-compose && sudo chmod 755 /usr/bin/docker-compose && docker-compose --version 
 
+# opentofu
+RUN curl --proto '=https' --tlsv1.2 -fsSL https://get.opentofu.org/install-opentofu.sh -o /tmp/install-opentofu.sh \
+  && chmod +x /tmp/install-opentofu.sh \
+  && /tmp/install-opentofu.sh --install-method rpm \
+  && rm /tmp/install-opentofu.sh
+
 # terraform
 FROM base as terraform
 ARG ARCH
@@ -170,7 +176,9 @@ RUN wget -O /usr/local/bin/kubectx https://raw.githubusercontent.com/ahmetb/kube
   && chmod +x /usr/local/bin/kube*
 
 ### final steps
-RUN curl --silent -Lo /usr/local/bin/kind "https://kind.sigs.k8s.io/dl/v0.9.0/kind-$(uname)-${ARCH}" && chmod +x /usr/local/bin/kind
+RUN curl --silent --location --output /usr/local/bin/kind $(curl -s https://api.github.com/repos/kubernetes-sigs/kind/releases | jq -r ' .[].assets[].browser_download_url' | grep linux-${ARCH} | head -1) \
+  && chmod +x /usr/local/bin/kind
+#RUN curl --silent -Lo /usr/local/bin/kind "https://kind.sigs.k8s.io/dl/v0.27.0/kind-$(uname)-${ARCH}" && chmod +x /usr/local/bin/kind
 #RUN curl -Lo /usr/local/bin/devspace "https://github.com/devspace-cloud/devspace/releases/download/v5.0.3/devspace-linux-${ARCH}" && chmod +x /usr/local/bin/devspace
 
 ### install helmfile
