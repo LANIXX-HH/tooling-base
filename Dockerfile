@@ -84,8 +84,8 @@ WORKDIR /workspace
 CMD ["bash"]
 
 #docker-compose
-RUN curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m) -o /usr/bin/docker-compose && sudo chmod 755 /usr/bin/docker-compose && docker-compose --version 
-
+RUN curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m) -o /usr/bin/docker-compose && sudo chmod 755 /usr/bin/docker-compose && docker-compose --version
+  
 # opentofu
 RUN curl --proto '=https' --tlsv1.2 -fsSL https://get.opentofu.org/install-opentofu.sh -o /tmp/install-opentofu.sh \
   && chmod +x /tmp/install-opentofu.sh \
@@ -248,6 +248,14 @@ RUN curl --silent --location --output tflint.zip -s "$(curl -s https://api.githu
   && chmod +x tflint \
   && mv tflint /usr/local/bin \
   && rm tflint.zip
+
+# zellij
+# https://github.com/zellij-org/zellij/releases/latest/download/zellij-x86_64-unknown-linux-musl.tar.gz
+# only linux related binaries here
+RUN if ( test "$ARCH" == "amd64" ); then D_ARCH=x86_64; else D_ARCH=aarch64; fi && curl --silent --location --output /tmp/zellij.tar.gz "$(curl -s https://api.github.com/repos/zellij-org/zellij/releases/latest  | jq -r ' .assets[] | .browser_download_url' | grep "zellij-${D_ARCH}-unknown-linux-musl.tar.gz$")" \
+  && cd /tmp && tar -xvzf /tmp/zellij.tar.gz \
+  && mv /tmp/zellij /usr/local/bin \
+  && chmod +x /usr/local/bin/zellij
 
 ### aws cdk
 ### configure yum repo for nodejs
