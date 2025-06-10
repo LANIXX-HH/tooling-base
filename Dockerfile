@@ -250,7 +250,7 @@ RUN curl --silent --location --output tflint.zip -s "$(curl -s https://api.githu
   && rm tflint.zip
 
 #just
-RUN if ( test "$ARCH" = "amd64" ); then D_ARCH=x86_64; else D_ARCH=aarch64; fi && curl --silent --location $(curl -s https://api.github.com/repos/casey/just/releases | jq -r ' .[].assets[].browser_download_url' | grep ${D_ARCH}-unknown-linux | head -1) | tar -xzf - just -C /usr/local/bin
+RUN if ( test "$ARCH" = "amd64" ); then D_ARCH=x86_64; else D_ARCH=aarch64; fi && curl --silent --location $(curl -s https://api.github.com/repos/casey/just/releases | jq -r ' .[].assets[].browser_download_url' | grep ${D_ARCH}-unknown-linux | head -1) | tar -xzf - just -C /tmp && mv /tmp/just /usr/local/bin
 
 # zellij
 # https://github.com/zellij-org/zellij/releases/latest/download/zellij-x86_64-unknown-linux-musl.tar.gz
