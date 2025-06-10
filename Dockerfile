@@ -160,7 +160,7 @@ ENV LC_ALL en_US.UFT-8
 ENV EDITOR nvim
 
 ### docker binary
-RUN if ( test "$ARCH" == "amd64" ); then D_ARCH=x86_64; else D_ARCH=aarch64; fi && curl -L https://download.docker.com/linux/static/stable/${D_ARCH}/docker-27.3.1.tgz | tar xvz -C /tmp/ \ 
+RUN if ( test "$ARCH" = "amd64" ); then D_ARCH=x86_64; else D_ARCH=aarch64; fi && curl -L https://download.docker.com/linux/static/stable/${D_ARCH}/docker-27.3.1.tgz | tar xvz -C /tmp/ \ 
     && mv /tmp/docker/docker /usr/local/bin \
     && rm -rf /tmp/docker
 
@@ -250,16 +250,12 @@ RUN curl --silent --location --output tflint.zip -s "$(curl -s https://api.githu
   && rm tflint.zip
 
 #just
-RUN if ( test "$ARCH" == "amd64" ); then D_ARCH=x86_64; else D_ARCH=aarch64; fi && curl --silent --location $(curl -s https://api.github.com/repos/casey/just/releases | jq -r ' .[].assets[].browser_download_url' | grep ${D_ARCH}-unknown-linux | head -1) | tar -xzf - just -C /usr/local/bin
+RUN if ( test "$ARCH" = "amd64" ); then D_ARCH=x86_64; else D_ARCH=aarch64; fi && curl --silent --location $(curl -s https://api.github.com/repos/casey/just/releases | jq -r ' .[].assets[].browser_download_url' | grep ${D_ARCH}-unknown-linux | head -1) | tar -xzf - just -C /usr/local/bin
 
 # zellij
 # https://github.com/zellij-org/zellij/releases/latest/download/zellij-x86_64-unknown-linux-musl.tar.gz
 # only linux related binaries here
-RUN if ( test "$ARCH" == "amd64" ); then D_ARCH=x86_64; else D_ARCH=aarch64; fi && curl --silent --location --output /tmp/zellij.tar.gz "$(curl -s https://api.github.com/repos/zellij-org/zellij/releases/latest  | jq -r ' .assets[] | .browser_download_url' | grep "zellij-${D_ARCH}-unknown-linux-musl.tar.gz$")" \
-  && cd /tmp && tar -xvzf zellij /tmp/zellij.tar.gz \
-  && mv /tmp/zellij /usr/local/bin \
-  && chmod +x /usr/local/bin/zellij \
-  && rm /tmp/zellij.tar.gz
+RUN if ( test "$ARCH" = "amd64" ); then D_ARCH=x86_64; else D_ARCH=aarch64; fi && curl --silent --location "$(curl -s https://api.github.com/repos/zellij-org/zellij/releases/latest  | jq -r ' .assets[] | .browser_download_url' | grep "zellij-${D_ARCH}-unknown-linux-musl.tar.gz$")" | tar -xvzf -  -C /usr/local/bin
 
 ### aws cdk
 ### configure yum repo for nodejs
@@ -279,10 +275,10 @@ RUN curl --silent --location --output miller.tar.gz -s "$( curl -s https://api.g
   && rm -rf miller*
 
 ### session-manager
-RUN if ( test "$ARCH" == "amd64" ); then SM_ARCH=64bit; else SM_ARCH=arm64; fi && sudo yum install -y https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_${SM_ARCH}/session-manager-plugin.rpm
+RUN if ( test "$ARCH" = "amd64" ); then SM_ARCH=64bit; else SM_ARCH=arm64; fi && sudo yum install -y https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_${SM_ARCH}/session-manager-plugin.rpm
 
 ### granted / assume
-RUN if ( test "$ARCH" == "amd64" ); then SM_ARCH=x86_64; else SM_ARCH=arm64; fi && curl -OL releases.commonfate.io/granted/v0.31.0/granted_0.31.0_linux_${SM_ARCH}.tar.gz \
+RUN if ( test "$ARCH" = "amd64" ); then SM_ARCH=x86_64; else SM_ARCH=arm64; fi && curl -OL releases.commonfate.io/granted/v0.31.0/granted_0.31.0_linux_${SM_ARCH}.tar.gz \
   && tar -zxvf ./granted_0.31.0_linux_${SM_ARCH}.tar.gz -C /usr/local/bin/ \
   && rm ./granted_0.31.0_linux_${SM_ARCH}.tar.gz
 
