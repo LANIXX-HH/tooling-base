@@ -146,7 +146,7 @@ ARG UNAME
 
 
 ### D_ARCH
-ENV D_ARCH=$(if [ "$ARCH" = "amd64" ]; then echo x86_64; else echo aarch64; fi)
+ENV D_ARCH=$(if ( test "$ARCH" == "amd64" ); then echo x86_64; else echo aarch64; fi)
 
 ### set go path
 ENV PATH=$PATH:/usr/local/go/bin:~/.local/bin:/usr/local/bin
