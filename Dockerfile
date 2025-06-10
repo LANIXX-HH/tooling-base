@@ -144,10 +144,6 @@ ARG ARCH
 ARG UNAME
 #RUN adduser -DH -s /sbin/nologin kafka --uid 5001
 
-
-### D_ARCH
-ENV D_ARCH=$(if ( test "$ARCH" == "amd64" ); then echo x86_64; else echo aarch64; fi)
-
 ### set go path
 ENV PATH=$PATH:/usr/local/go/bin:~/.local/bin:/usr/local/bin
 
@@ -164,7 +160,7 @@ ENV LC_ALL en_US.UFT-8
 ENV EDITOR nvim
 
 ### docker binary
-RUN curl -L https://download.docker.com/linux/static/stable/${D_ARCH}/docker-27.3.1.tgz | tar xvz -C /tmp/ \ 
+RUN if ( test "$ARCH" == "amd64" ); then D_ARCH=x86_64; else D_ARCH=aarch64; fi && curl -L https://download.docker.com/linux/static/stable/${D_ARCH}/docker-27.3.1.tgz | tar xvz -C /tmp/ \ 
     && mv /tmp/docker/docker /usr/local/bin \
     && rm -rf /tmp/docker
 
@@ -254,12 +250,12 @@ RUN curl --silent --location --output tflint.zip -s "$(curl -s https://api.githu
   && rm tflint.zip
 
 #just
-RUN curl --silent --location $(curl -s https://api.github.com/repos/casey/just/releases | jq -r ' .[].assets[].browser_download_url' | grep ${D_ARCH}-unknown-linux | head -1) | tar -xzf - just -C /usr/local/bin
+RUN if ( test "$ARCH" == "amd64" ); then D_ARCH=x86_64; else D_ARCH=aarch64; fi && curl --silent --location $(curl -s https://api.github.com/repos/casey/just/releases | jq -r ' .[].assets[].browser_download_url' | grep ${D_ARCH}-unknown-linux | head -1) | tar -xzf - just -C /usr/local/bin
 
 # zellij
 # https://github.com/zellij-org/zellij/releases/latest/download/zellij-x86_64-unknown-linux-musl.tar.gz
 # only linux related binaries here
-RUN curl --silent --location --output /tmp/zellij.tar.gz "$(curl -s https://api.github.com/repos/zellij-org/zellij/releases/latest  | jq -r ' .assets[] | .browser_download_url' | grep "zellij-${D_ARCH}-unknown-linux-musl.tar.gz$")" \
+RUN if ( test "$ARCH" == "amd64" ); then D_ARCH=x86_64; else D_ARCH=aarch64; fi && curl --silent --location --output /tmp/zellij.tar.gz "$(curl -s https://api.github.com/repos/zellij-org/zellij/releases/latest  | jq -r ' .assets[] | .browser_download_url' | grep "zellij-${D_ARCH}-unknown-linux-musl.tar.gz$")" \
   && cd /tmp && tar -xvzf zellij /tmp/zellij.tar.gz \
   && mv /tmp/zellij /usr/local/bin \
   && chmod +x /usr/local/bin/zellij \
