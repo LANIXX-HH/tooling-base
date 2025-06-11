@@ -250,12 +250,16 @@ RUN curl --silent --location --output tflint.zip -s "$(curl -s https://api.githu
   && rm tflint.zip
 
 #just
-RUN if ( test "$ARCH" = "amd64" ); then D_ARCH=x86_64; else D_ARCH=aarch64; fi && curl --silent --location $(curl -s https://api.github.com/repos/casey/just/releases | jq -r ' .[].assets[].browser_download_url' | grep ${D_ARCH}-unknown-linux | head -1) | tar -xzf - just -C /tmp && mv /tmp/just /usr/local/bin
-
+RUN if ( test "$ARCH" = "amd64" ); then D_ARCH=x86_64; else D_ARCH=aarch64; fi \
+  && mkdir /tmp/just \
+  && curl --silent --location $(curl -s https://api.github.com/repos/casey/just/releases | jq -r ' .[].assets[].browser_download_url' | grep ${D_ARCH}-unknown-linux | head -1) | tar xzf - -C /tmp/just \
+  && mv /tmp/just/just /usr/local/bin \
+  && rm -rf /tmp/just
 # zellij
 # https://github.com/zellij-org/zellij/releases/latest/download/zellij-x86_64-unknown-linux-musl.tar.gz
 # only linux related binaries here
-RUN if ( test "$ARCH" = "amd64" ); then D_ARCH=x86_64; else D_ARCH=aarch64; fi && curl --silent --location "$(curl -s https://api.github.com/repos/zellij-org/zellij/releases/latest  | jq -r ' .assets[] | .browser_download_url' | grep "zellij-${D_ARCH}-unknown-linux-musl.tar.gz$")" | tar -xvzf -  -C /usr/local/bin
+RUN if ( test "$ARCH" = "amd64" ); then D_ARCH=x86_64; else D_ARCH=aarch64; fi \
+  && curl --silent --location "$(curl -s https://api.github.com/repos/zellij-org/zellij/releases/latest  | jq -r ' .assets[] | .browser_download_url' | grep "zellij-${D_ARCH}-unknown-linux-musl.tar.gz$")" | tar -xvzf -  -C /usr/local/bin
 
 ### aws cdk
 ### configure yum repo for nodejs
