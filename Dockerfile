@@ -253,7 +253,7 @@ RUN curl --silent --location --output tflint.zip -s "$(curl -s https://api.githu
 RUN if ( test "$ARCH" = "amd64" ); then D_ARCH=x86_64; else D_ARCH=aarch64; fi \
   && curl --silent --location --output /tmp/q.zip  "https://desktop-release.q.us-east-1.amazonaws.com/latest/q-${D_ARCH}-linux.zip" \
   && unzip /tmp/q.zip -d /tmp \
-  && mv /tmp/q/bin/q /usr/local/bin/q \
+  && mv /tmp/q/bin/* /usr/local/bin/ \
   && rm -rf /tmp/q*
 
 #just
