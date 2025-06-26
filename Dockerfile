@@ -249,12 +249,20 @@ RUN curl --silent --location --output tflint.zip -s "$(curl -s https://api.githu
   && mv tflint /usr/local/bin \
   && rm tflint.zip
 
+# amazon q
+RUN if ( test "$ARCH" = "amd64" ); then D_ARCH=x86_64; else D_ARCH=aarch64; fi \
+  && curl --silent --location --output /tmp/q.zip  "https://desktop-release.q.us-east-1.amazonaws.com/latest/q-${D_ARCH}-linux.zip" \
+  && unzip /tmp/q.zip -d /tmp \
+  && mv /tmp/q/bin/q /usr/local/bin/q \
+  && rm -rf /tmp/q*
+
 #just
 RUN if ( test "$ARCH" = "amd64" ); then D_ARCH=x86_64; else D_ARCH=aarch64; fi \
   && mkdir /tmp/just \
   && curl --silent --location $(curl -s https://api.github.com/repos/casey/just/releases | jq -r ' .[].assets[].browser_download_url' | grep ${D_ARCH}-unknown-linux | head -1) | tar xzf - -C /tmp/just \
   && mv /tmp/just/just /usr/local/bin \
   && rm -rf /tmp/just
+
 # zellij
 # https://github.com/zellij-org/zellij/releases/latest/download/zellij-x86_64-unknown-linux-musl.tar.gz
 # only linux related binaries here
