@@ -234,6 +234,11 @@ RUN curl --silent --location --output hub.tgz -s "$(curl -s https://api.github.c
 RUN curl --silent --location --output /usr/local/bin/aws-vault -s "$(curl -s https://api.github.com/repos/99designs/aws-vault/releases/latest | jq -r ' .assets[] | .browser_download_url' | grep "linux-${ARCH}" )" \
   && chmod +x /usr/local/bin/aws-vault
 
+### nvim
+RUN curl --silent --location "$(curl -s https://api.github.com/repos/neovim/neovim/releases/latest  | jq -r ' .assets[] | .browser_download_url' | grep "linux-${ARCH}.tar.gz")" | tar -xvzf - -C /tmp nvim-linux-arm64/bin/nvim \
+  && mv /tmp/nvim-linux-arm64/bin/nvim /usr/local/bin \
+  && rm -rf /tmp/nvim-linux-arm64
+
 ### direnv
 RUN curl --silent --location --output /usr/local/bin/direnv "$(curl -s https://api.github.com/repos/direnv/direnv/releases/latest  | jq -r ' .assets[] | .browser_download_url' | grep "linux-${ARCH}")" \
   && chmod +x /usr/local/bin/direnv
