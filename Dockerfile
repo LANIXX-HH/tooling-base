@@ -1,6 +1,3 @@
-### Optimized Multi-Stage Dockerfile for tooling-base
-### Reduced layers and improved space efficiency
-
 # Build arguments with default versions
 ARG KOPS_VERSION=${KOPS_VERSION:-v1.25.0}
 ARG KAFKA_VERSION=${KAFKA_VERSION:-3.8.0}
