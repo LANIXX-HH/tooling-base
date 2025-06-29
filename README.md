@@ -10,29 +10,68 @@ based on alpine:edge
 
 base packages:
 
-* k8s tools: kubectl, kubectx, kubens, eksctl
-* helm
-* aws sso wrappers:
+* **Kubernetes tools:**
+  * kubectl - Kubernetes command-line tool
+  * kubectx (alias: kx) - switch between Kubernetes contexts
+  * kubens (alias: kn) - switch between Kubernetes namespaces
+  * eksctl - AWS EKS cluster management tool
+  * kind - run local Kubernetes clusters using Docker
+  * helmfile - declarative spec for deploying Helm charts
+  * helm - Kubernetes package manager
+
+* **AWS tools:**
+  * awscli v2 - AWS command line interface
+  * aws-iam-authenticator - AWS IAM authenticator for Kubernetes
+  * aws cdk - AWS Cloud Development Kit
+  * session manager - AWS Systems Manager Session Manager plugin
+  * aws-vault - secure credential storage and access
+
+* **AWS SSO wrappers:**
   * aws-sso.py and additional help wrapper for shell session
-  * granted / assume
-* terraform:
-  * tflint, tfsec, tfenv
-  * terraform-graph-beautifier
-* terragrunt with tgenv
-* aws:
-  * awscli v2
-  * aws-iam-authenticator
-  * aws cdk
-  * session manager
-* docker
-* docker-compose
-* git
-  * hub
-  * scripts: git-pair, git-solo, git-authors, git-time, git-pp, git-changelog
-* zsh, zsh-completions, zsh-suggestions, powerline, oh-my-zsh
-* yq
-* jid
-* miller
+  * granted / assume - simplified AWS credential management
+
+* **Infrastructure as Code:**
+  * terraform with tfenv - infrastructure provisioning tool with version manager
+  * terragrunt with tgenv - Terraform wrapper with version manager
+  * opentofu - open-source Terraform alternative
+  * tflint - Terraform linter
+  * tfsec - Terraform security scanner
+  * terraform-docs - generate documentation from Terraform modules
+  * terraform-graph-beautifier - beautify Terraform dependency graphs
+
+* **Container tools:**
+  * docker - container runtime
+  * docker-compose - multi-container Docker applications
+
+* **Development tools:**
+  * git with extensions:
+    * hub - GitHub command-line tool
+    * scripts: git-pair, git-solo, git-authors, git-time, git-pp, git-changelog
+  * nvim (neovim) - modern Vim-based editor
+  * direnv - environment variable management per directory
+  * just - command runner (alternative to make)
+
+* **Data processing:**
+  * yq - YAML/JSON/XML processor
+  * jid - JSON incremental digger (interactive JSON explorer)
+  * miller (mlr) - data processing tool for CSV, TSV, JSON, etc.
+  * jq - JSON processor (included in base system)
+
+* **Shell and terminal:**
+  * zsh with oh-my-zsh, zsh-completions, zsh-autosuggestions
+  * powerlevel9k/powerlevel10k themes
+  * zsh-syntax-highlighting
+  * kube-ps1 - Kubernetes prompt for bash/zsh
+  * zellij - terminal multiplexer
+
+* **CI/CD and automation:**
+  * fly - Concourse CI command-line tool
+
+* **Messaging and streaming:**
+  * kafka - Apache Kafka with Scala runtime
+
+* **AI and productivity:**
+  * Amazon Q - AI-powered assistant for developers
 
 ##Useful Commands and Configs
 
@@ -48,6 +87,61 @@ $(aws-assume.sh ”arn:aws:iam::808833771028:role/continuous” ”stage-dev” 
 * kubectx (short alias kx) – use specific kubernetes cluster context aka kubectl config use-context kubernetes.dev.cloudhh.de 
 * kubens (short alias kn) – select specific kubernetes namespace for current selected kubernetes cluster
 * jid – You can drill down JSON interactively by using filtering queries like jq. (simeji/jid )
+* git-pp – pretty print git log with enhanced formatting
+* git-changelog – generate changelog from git commits
+* git-authors – list all authors in the repository
+* git-time – show time-based git statistics
+* yq – YAML/JSON/XML processor - like jq but for YAML files
+* mlr (miller) – data processing tool for CSV, TSV, JSON and other structured data formats
+* just – command runner similar to make but with simpler syntax
+* direnv – automatically loads environment variables when entering directories
+* nvim – modern Vim-based text editor with enhanced features
+* zellij – terminal multiplexer (alternative to tmux/screen) with modern UI
+* hub – GitHub command-line tool for repository management
+* kind – run local Kubernetes clusters using Docker containers
+* helmfile – declarative specification for deploying Helm charts
+* terraform-docs – generate documentation from Terraform modules automatically
+* terraform-graph-beautifier – create beautiful dependency graphs from Terraform plans
+* tflint – Terraform linter to find possible errors and enforce best practices
+* tfsec – security scanner for Terraform code to identify potential security issues
+* tfenv – Terraform version manager to switch between different Terraform versions
+* tgenv – Terragrunt version manager to switch between different Terragrunt versions
+* aws-vault – secure credential storage and access for AWS
+* aws-iam-authenticator – AWS IAM authenticator for Kubernetes clusters
+* opentofu – open-source Terraform alternative with full compatibility
+* granted/assume – simplified AWS credential management with interactive profile selection
+* Amazon Q – AI-powered assistant for developers with code suggestions and explanations
+
+###Kafka Tools
+* kafka-console-producer – command-line tool to produce messages to Kafka topics
+* kafka-console-consumer – command-line tool to consume messages from Kafka topics
+* kafka-topics – manage Kafka topics (create, list, describe, delete)
+* kafka-configs – manage Kafka configurations
+
+###System and Database Tools
+* **System utilities:**
+  * htop – interactive process viewer
+  * nmap – network discovery and security auditing tool
+  * strace – system call tracer for debugging
+  * bind-utils – DNS lookup utilities (dig, nslookup)
+  * openssl – cryptography toolkit
+  * rsync – file synchronization tool
+  * unzip/tar – archive extraction tools
+
+* **Database clients:**
+  * mariadb105 – MySQL/MariaDB command-line client
+  * postgresql16 – PostgreSQL command-line client
+
+* **Communication tools:**
+  * mailx – command-line mail client
+  * mutt – text-based email client
+  * openldap-clients – LDAP client utilities
+
+* **Text processing:**
+  * sed – stream editor for filtering and transforming text
+  * grep – text search utility
+  * less – file pager
+  * vim/nano – text editors
 
 ## How To use it (docker-compose example)
 

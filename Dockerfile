@@ -1,8 +1,7 @@
-### A Multi-Stage-Dockerfile to create a container which is provisioned with
-### all the tooling necessary to provision the infrastructure.
+### Optimized Multi-Stage Dockerfile for tooling-base
+### Reduced layers and improved space efficiency
 
-### Base
-# Setup build arguments with default versions
+# Build arguments with default versions
 ARG KOPS_VERSION=${KOPS_VERSION:-v1.25.0}
 ARG KAFKA_VERSION=${KAFKA_VERSION:-3.8.0}
 ARG SCALA_VERSION=${SCALA_VERSION:-2.13}
@@ -11,339 +10,242 @@ ARG HELM_VERSION=${HELM_VERSION:-"latest"}
 ARG TERRAGRUNT_VERSION=${TERRAGRUNT_VERSION:-"latest"}
 ARG TERRAFORM_VERSION=${TERRAFORM_VERSION:-"latest"}
 
-ARG TF_KAFKA_PROVIDER_NAME=terraform-provider-kafka
-
-# build base image
 ARG ARCH=${ARCH:-${ARCH}}
 ARG UNAME=${UNAME:-${UNAME}}
 ARG IMAGE=${IMAGE:-amazonlinux}
 ARG TAG=${TAG:-2023}
+
+# Base image with system packages
 FROM $IMAGE:$TAG as base
 ENV GLIBC_VER=2.31-r0 
 ARG ARCH
 
 USER root
 
-### install missing tools
+# Install all system packages in one layer and clean up
 RUN yum install -y -q \
-  aws-cli \
-  bash \
-  bash-completion \
-  bind-utils \
-  ca-certificates \
-  dialog \
-  dos2unix \
-  findutils \
-  gettext \
-  git \
-  glibc-langpack-en \
-  glibc-locale-source \
-  grep \
-  groff \
-  htop \
-  jq \
-  less \
-  mailx \
-  make \
-  mariadb105 \
-  mutt \
-  nano \
-  ncurses \
-  nmap \
-  openldap-clients \
-  openssh-clients \
-  openssl \
-  perl \
-  postgresql16 \
-  python3.11-pip \
-  python3.11 \
-  rsync \
-  sed \
-  shadow \
-  strace \
-  sudo \
-  tar \
-  tzdata \
-  unzip \
-  util-linux \
-  util-linux-user \
-  vim \
-  wget \
-  zsh
+    aws-cli bash bash-completion bind-utils ca-certificates dialog dos2unix \
+    findutils gettext git glibc-langpack-en glibc-locale-source grep groff \
+    htop jq less mailx make mariadb105 mutt nano ncurses nmap openldap-clients \
+    openssh-clients openssl perl postgresql16 python3.11-pip python3.11 rsync \
+    sed shadow strace sudo tar tzdata unzip util-linux util-linux-user vim \
+    wget zsh && \
+    yum clean all && \
+    rm -rf /var/cache/yum/* && \
+    localedef --no-archive -i en_US -f UTF-8 en_US.UTF-8
 
-RUN localedef --no-archive -i en_US -f UTF-8 en_US.UTF-8
-
-### install pip packages from requirements.txt and awscli v2
-### disabled: ansible-vault
-COPY requirements.txt /tmp
-RUN pip3.11 install --upgrade --force-reinstall pip \
-  && python3.11 -m ensurepip --upgrade \
-  && pip3.11 install --ignore-installed -r /tmp/requirements.txt
+# Python packages and AWS CLI v2 in one layer
+COPY requirements.txt /tmp/
+RUN pip3.11 install --upgrade --force-reinstall pip && \
+    python3.11 -m ensurepip --upgrade && \
+    pip3.11 install --ignore-installed -r /tmp/requirements.txt && \
+    rm -rf /tmp/* /root/.cache/pip
 
 WORKDIR /workspace
-CMD ["bash"]
 
-#docker-compose
-RUN curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m) -o /usr/bin/docker-compose && sudo chmod 755 /usr/bin/docker-compose && docker-compose --version
-  
-# opentofu
-RUN curl --proto '=https' --tlsv1.2 -fsSL https://get.opentofu.org/install-opentofu.sh -o /tmp/install-opentofu.sh \
-  && chmod +x /tmp/install-opentofu.sh \
-  && /tmp/install-opentofu.sh --install-method rpm \
-  && rm /tmp/install-opentofu.sh
-
-# terraform
-FROM base as terraform
+# Download stage - all external downloads in one stage
+FROM base as downloader
 ARG ARCH
-RUN git clone https://github.com/tfutils/tfenv.git /usr/local/tfenv
-RUN find /usr/local/tfenv -type f -print0 | xargs -0 sed -i "s/amd64/${ARCH}/g"
-
-# terragrunt
-FROM base as terragrunt
-ARG ARCH
-RUN git clone https://github.com/cunymatthieu/tgenv.git /usr/local/tgenv
-RUN find /usr/local/tgenv -type f -print0 | xargs -0 sed -i "s/amd64/${ARCH}/g"
-
-### kubectl
-FROM base AS kubectl
-ARG ARCH
-WORKDIR /tmp
-RUN curl --silent --location --output kubectl \ 
-  https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/${ARCH}/kubectl \
-  && chmod +x kubectl
-
-#### kops
-#FROM base AS kops
-#ARG ARCH
-#ARG KOPS_VERSION
-#WORKDIR /tmp
-#RUN curl --silent --location --output kops \
-#  https://github.com/kubernetes/kops/releases/download/${KOPS_VERSION}/kops-linux-${ARCH} \
-#  && curl --silent --location --output kops-sha1 \
-#  https://github.com/kubernetes/kops/releases/download/${KOPS_VERSION}/kops-linux-${ARCH}-sha1 \
-#  && echo Download checksum: $(sha1sum kops) \
-#  && sha1sum kops | grep "$(cat kops-sha1)" \
-#  && chmod +x kops
-
-### kafka
-FROM base AS kafka
-ARG ARCH
+ARG FLY
 ARG KAFKA_VERSION
 ARG SCALA_VERSION
 
-LABEL name="kafka" version=${KAFKA_VERSION}
+WORKDIR /tmp
 
-RUN mkdir -p /opt && curl -sSL "https://archive.apache.org/dist/kafka/${KAFKA_VERSION}/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz" \
-  | tar -xzf - -C /opt \
-  && mv /opt/kafka_${SCALA_VERSION}-${KAFKA_VERSION} /opt/kafka \
-  && rm -rf /tmp/* 
+# Set architecture variables for different tools
+RUN if [ "$ARCH" = "amd64" ]; then \
+        export D_ARCH=x86_64 SM_ARCH=64bit SM_ARCH2=x86_64; \
+    else \
+        export D_ARCH=aarch64 SM_ARCH=arm64 SM_ARCH2=arm64; \
+    fi && \
+    # Docker Compose
+    curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m)" -o /usr/local/bin/docker-compose && \
+    chmod 755 /usr/local/bin/docker-compose && \
+    # Docker binary
+    curl -L "https://download.docker.com/linux/static/stable/${D_ARCH}/docker-27.3.1.tgz" | tar xz && \
+    mv docker/docker /usr/local/bin/ && \
+    # OpenTofu
+    curl --proto '=https' --tlsv1.2 -fsSL https://get.opentofu.org/install-opentofu.sh -o install-opentofu.sh && \
+    chmod +x install-opentofu.sh && \
+    ./install-opentofu.sh --install-method rpm && \
+    # Helm
+    curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash && \
+    # kubectl
+    curl -L "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/${ARCH}/kubectl" -o /usr/local/bin/kubectl && \
+    chmod +x /usr/local/bin/kubectl && \
+    # kubectx & kubens
+    curl -L https://raw.githubusercontent.com/ahmetb/kubectx/master/kubectx -o /usr/local/bin/kubectx && \
+    curl -L https://raw.githubusercontent.com/ahmetb/kubectx/master/kubens -o /usr/local/bin/kubens && \
+    chmod +x /usr/local/bin/kube* && \
+    # kind
+    curl -L "$(curl -s https://api.github.com/repos/kubernetes-sigs/kind/releases | jq -r '.[].assets[].browser_download_url' | grep linux-${ARCH} | head -1)" -o /usr/local/bin/kind && \
+    chmod +x /usr/local/bin/kind && \
+    # helmfile
+    curl -L "$(curl -s https://api.github.com/repos/roboll/helmfile/releases | jq -r '.[].assets[].browser_download_url' | grep linux_${ARCH} | head -1)" -o /usr/local/bin/helmfile && \
+    chmod +x /usr/local/bin/helmfile && \
+    # terraform-docs
+    curl -L "$(curl -s https://api.github.com/repos/terraform-docs/terraform-docs/releases | jq -r '.[].assets[].browser_download_url' | grep linux-${ARCH} | head -1)" | tar xz && \
+    mv terraform-docs /usr/local/bin/ && \
+    chmod +x /usr/local/bin/terraform-docs && \
+    # tflint (only once!)
+    curl -L "$(curl -s https://api.github.com/repos/terraform-linters/tflint/releases/latest | grep -o -E "https://.+?_linux_${ARCH}.zip")" -o tflint.zip && \
+    unzip tflint.zip && \
+    mv tflint /usr/local/bin/ && \
+    chmod +x /usr/local/bin/tflint && \
+    # fly
+    curl -L "$(curl -s https://api.github.com/repos/concourse/concourse/releases | jq -r '. [] | select(.tag_name|test("v'${FLY}'")) | .assets[] | .browser_download_url' | grep "fly-${FLY}-linux-${ARCH}.tgz$")" -o fly.tgz && \
+    tar -xzf fly.tgz && \
+    mv fly /usr/local/bin/ && \
+    chmod +x /usr/local/bin/fly && \
+    # jid
+    curl -L "$(curl -s https://api.github.com/repos/simeji/jid/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux_${ARCH}")" -o jid.zip && \
+    unzip jid.zip && \
+    mv jid /usr/local/bin/ && \
+    chmod +x /usr/local/bin/jid && \
+    # aws-iam-authenticator
+    curl -L "https://amazon-eks.s3.us-west-2.amazonaws.com/1.18.9/2020-11-02/bin/linux/${ARCH}/aws-iam-authenticator" -o /usr/local/bin/aws-iam-authenticator && \
+    chmod +x /usr/local/bin/aws-iam-authenticator && \
+    # yq
+    curl -L "$(curl -s https://api.github.com/repos/mikefarah/yq/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux_${ARCH}$")" -o /usr/local/bin/yq && \
+    chmod +x /usr/local/bin/yq && \
+    # eksctl
+    curl -L "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_${ARCH}.tar.gz" | tar xz && \
+    mv eksctl /usr/local/bin/ && \
+    chmod +x /usr/local/bin/eksctl && \
+    # hub
+    curl -L "$(curl -s https://api.github.com/repos/mislav/hub/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux-${ARCH}")" -o hub.tgz && \
+    tar -xzf hub.tgz --strip-components=2 --wildcards "*/bin/hub" && \
+    mv hub /usr/local/bin/ && \
+    chmod +x /usr/local/bin/hub && \
+    # aws-vault
+    curl -L "$(curl -s https://api.github.com/repos/99designs/aws-vault/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux-${ARCH}")" -o /usr/local/bin/aws-vault && \
+    chmod +x /usr/local/bin/aws-vault && \
+    # nvim
+    curl -L "$(curl -s https://api.github.com/repos/neovim/neovim/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux-${ARCH}.tar.gz")" | tar -xz --strip-components=2 --wildcards "*/bin/nvim" && \
+    mv nvim /usr/local/bin/ && \
+    chmod +x /usr/local/bin/nvim && \
+    # direnv
+    curl -L "$(curl -s https://api.github.com/repos/direnv/direnv/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux-${ARCH}")" -o /usr/local/bin/direnv && \
+    chmod +x /usr/local/bin/direnv && \
+    # tfsec
+    curl -L "$(curl -s https://api.github.com/repos/aquasecurity/tfsec/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "tfsec-linux-${ARCH}$")" -o /usr/local/bin/tfsec && \
+    chmod +x /usr/local/bin/tfsec && \
+    # Amazon Q
+    curl -L "https://desktop-release.q.us-east-1.amazonaws.com/latest/q-${D_ARCH}-linux.zip" -o q.zip && \
+    unzip q.zip && \
+    mv q/bin/* /usr/local/bin/ && \
+    # just
+    curl -L "$(curl -s https://api.github.com/repos/casey/just/releases | jq -r '.[].assets[].browser_download_url' | grep ${D_ARCH}-unknown-linux | head -1)" | tar xz && \
+    mv just /usr/local/bin/ && \
+    # zellij
+    curl -L "$(curl -s https://api.github.com/repos/zellij-org/zellij/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "zellij-${D_ARCH}-unknown-linux-musl.tar.gz$")" | tar -xz -C /usr/local/bin && \
+    # miller
+    curl -L "$(curl -s https://api.github.com/repos/johnkerl/miller/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux-${ARCH}.tar.gz")" -o miller.tar.gz && \
+    tar -xzf miller.tar.gz --strip-components=1 --wildcards "*/mlr" && \
+    mv mlr /usr/local/bin/ && \
+    # granted/assume
+    curl -L "releases.commonfate.io/granted/v0.31.0/granted_0.31.0_linux_${SM_ARCH2}.tar.gz" -o granted.tar.gz && \
+    tar -xzf granted.tar.gz -C /usr/local/bin/ && \
+    # terraform-graph-beautifier
+    curl -L "$(curl -s https://api.github.com/repos/pcasteran/terraform-graph-beautifier/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux_${ARCH}.tar.gz$")" -o tf-graph-beauty.tar.gz && \
+    tar -xzf tf-graph-beauty.tar.gz terraform-graph-beautifier && \
+    mv terraform-graph-beautifier /usr/local/bin/ && \
+    # Kafka
+    mkdir -p /opt && \
+    curl -L "https://archive.apache.org/dist/kafka/${KAFKA_VERSION}/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz" | tar -xz -C /opt && \
+    mv "/opt/kafka_${SCALA_VERSION}-${KAFKA_VERSION}" /opt/kafka && \
+    # Clean up all temporary files
+    rm -rf /tmp/*
 
-### build final image
-FROM base as final
+# Environment setup stage
+FROM base as env-setup
+
+# Install Node.js and AWS CDK in one layer
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash && \
+    export NVM_DIR="$HOME/.nvm" && \
+    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && \
+    nvm install 22 && \
+    nvm use 22 && \
+    npm install -g aws-cdk && \
+    rm -rf /root/.npm /tmp/*
+
+# Install session manager plugin
 ARG ARCH
-ARG UNAME
-#RUN adduser -DH -s /sbin/nologin kafka --uid 5001
+RUN if [ "$ARCH" = "amd64" ]; then SM_ARCH=64bit; else SM_ARCH=arm64; fi && \
+    yum install -y "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_${SM_ARCH}/session-manager-plugin.rpm" && \
+    yum clean all && \
+    rm -rf /var/cache/yum/*
 
-### set go path
+# ZSH and shell setup in one layer
+RUN git clone --depth=1 https://github.com/robbyrussell/oh-my-zsh.git /oh-my-zsh && \
+    git clone --depth=1 https://github.com/zsh-users/zsh-completions /oh-my-zsh/custom/plugins/zsh-completions && \
+    git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions /oh-my-zsh/custom/plugins/zsh-autosuggestions && \
+    git clone --depth=1 https://github.com/bhilburn/powerlevel9k.git /powerlevel9k && \
+    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git /powerlevel10k && \
+    git clone --depth=1 https://github.com/zsh-users/zsh-syntax-highlighting.git /zsh-syntax-highlighting && \
+    curl -o /usr/local/bin/kube-ps1.sh https://raw.githubusercontent.com/jonmosco/kube-ps1/master/kube-ps1.sh && \
+    chmod +x /usr/local/bin/kube-ps1.sh && \
+    rm -rf /tmp/*
+
+# Terraform and Terragrunt setup
+RUN git clone --depth=1 https://github.com/tfutils/tfenv.git /usr/local/tfenv && \
+    git clone --depth=1 https://github.com/cunymatthieu/tgenv.git /usr/local/tgenv && \
+    find /usr/local/tfenv -type f -exec sed -i "s/amd64/${ARCH}/g" {} \; && \
+    find /usr/local/tgenv -type f -exec sed -i "s/amd64/${ARCH}/g" {} \; && \
+    ln -s /usr/local/tfenv/bin/tfenv /usr/local/bin/tfenv && \
+    ln -s /usr/local/tfenv/bin/terraform /usr/local/bin/terraform && \
+    ln -s /usr/local/tgenv/bin/terragrunt /usr/local/bin/terragrunt && \
+    ln -s /usr/local/tgenv/bin/tgenv /usr/local/bin/tgenv
+
+# Final stage
+FROM env-setup as final
+ARG ARCH
+ARG TERRAFORM_VERSION
+ARG TERRAGRUNT_VERSION
+
+# Copy all binaries from downloader stage
+COPY --from=downloader /usr/local/bin/* /usr/local/bin/
+COPY --from=downloader /opt/kafka /opt/kafka
+
+# Set environment variables
 ENV PATH=$PATH:/usr/local/go/bin:~/.local/bin:/usr/local/bin
+ENV TZ=Europe/Berlin
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+ENV EDITOR=nvim
 
-### set timezone
-ENV TZ Europe/Berlin
-RUN cp /usr/share/zoneinfo/Europe/Berlin /etc/localtime && echo "Europe/Brussels" >  /etc/timezone
+# Set timezone and create kafka user
+RUN cp /usr/share/zoneinfo/Europe/Berlin /etc/localtime && \
+    echo "Europe/Berlin" > /etc/timezone && \
+    adduser -s /sbin/nologin kafka && \
+    chown -R kafka: /opt/kafka
 
-### set locale
-ENV LANG en_US.UTF-8
-ENV LANGUAGE en_US.UTF-8
-ENV LC_ALL en_US.UFT-8
-
-### set default editor
-ENV EDITOR nvim
-
-### docker binary
-RUN if ( test "$ARCH" = "amd64" ); then D_ARCH=x86_64; else D_ARCH=aarch64; fi && curl -L https://download.docker.com/linux/static/stable/${D_ARCH}/docker-27.3.1.tgz | tar xvz -C /tmp/ \ 
-    && mv /tmp/docker/docker /usr/local/bin \
-    && rm -rf /tmp/docker
-
-### helm
-RUN curl -fsSL -o /tmp/get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 \
-    && chmod 700 /tmp/get_helm.sh \
-    && /tmp/get_helm.sh \
-    && rm /tmp/get_helm.sh
-
-### kubectx
-RUN wget -O /usr/local/bin/kubectx https://raw.githubusercontent.com/ahmetb/kubectx/master/kubectx \
-  && wget -O /usr/local/bin/kubens https://raw.githubusercontent.com/ahmetb/kubectx/master/kubens \
-  && chmod +x /usr/local/bin/kube*
-
-### final steps
-RUN curl --silent --location --output /usr/local/bin/kind $(curl -s https://api.github.com/repos/kubernetes-sigs/kind/releases | jq -r ' .[].assets[].browser_download_url' | grep linux-${ARCH} | head -1) \
-  && chmod +x /usr/local/bin/kind
-#RUN curl --silent -Lo /usr/local/bin/kind "https://kind.sigs.k8s.io/dl/v0.27.0/kind-$(uname)-${ARCH}" && chmod +x /usr/local/bin/kind
-#RUN curl -Lo /usr/local/bin/devspace "https://github.com/devspace-cloud/devspace/releases/download/v5.0.3/devspace-linux-${ARCH}" && chmod +x /usr/local/bin/devspace
-
-### install helmfile
-RUN curl --silent --location --output /usr/local/bin/helmfile $( curl -s https://api.github.com/repos/roboll/helmfile/releases | jq -r ' .[].assets[].browser_download_url' | grep linux_${ARCH} | head -1) \
-  && chmod +x /usr/local/bin/helmfile
-
-### install terraform-docs
-RUN curl -L $(curl -s https://api.github.com/repos/terraform-docs/terraform-docs/releases | jq -r ' .[].assets[].browser_download_url' | grep linux-${ARCH} | head -1) | tar xvz -C /tmp \ 
-  && mv /tmp/terraform-docs /usr/local/bin \
-  && chmod +x /usr/local/bin/terraform-docs \
-  && rm /tmp/README.md
-
-### tflint
-RUN curl --silent --location --output tflint.zip "$(curl -Ls https://api.github.com/repos/terraform-linters/tflint/releases/latest | grep -o -E "https://.+?_linux_${ARCH}.zip")" && unzip tflint.zip && rm tflint.zip \
-  && mv tflint /usr/local/bin \
-  && chmod +x /usr/local/bin/tflint
-
-### fly
-ARG FLY
-RUN curl --silent --location --output fly.tgz -s "$(curl -s https://api.github.com/repos/concourse/concourse/releases | jq -r ' . [] | select(.tag_name|test("v'${FLY}'")) | .assets[] | .browser_download_url' | grep "fly-${FLY}-linux-${ARCH}.tgz$")" \
- && tar -xvzf fly.tgz -C . \
- && chmod +x fly \
- && mv fly /usr/local/bin \
- && rm fly.tgz || exit 0
-
-### jid
-RUN curl --silent --location --output jid.zip -s "$(curl -s https://api.github.com/repos/simeji/jid/releases/latest | jq -r ' .assets[] | .browser_download_url' | grep "linux_${ARCH}" )" \
-  && unzip jid.zip \
-  && chmod +x jid \
-  && mv jid /usr/local/bin \
-  && rm jid.zip
-
-### aws-iam-authentificator
-RUN curl --silent --location --output /usr/local/bin/aws-iam-authenticator https://amazon-eks.s3.us-west-2.amazonaws.com/1.18.9/2020-11-02/bin/linux/${ARCH}/aws-iam-authenticator \
-  && chmod +x /usr/local/bin/aws-iam-authenticator
-
-### install yq
-RUN curl --silent --location --output /usr/local/bin/yq "$(curl -s https://api.github.com/repos/mikefarah/yq/releases/latest | jq -r ' .assets[] | .browser_download_url' | grep "linux_${ARCH}$")" \
-  && chmod +x /usr/local/bin/yq
-
-### eksctl
-RUN curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_${ARCH}.tar.gz" | tar xz -C /tmp \
-  && sudo chmod +x /tmp/eksctl \
-  && sudo mv /tmp/eksctl /usr/local/bin
-
-### hub
-RUN curl --silent --location --output hub.tgz -s "$(curl -s https://api.github.com/repos/mislav/hub/releases/latest | jq -r ' .assets[] | .browser_download_url' | grep "linux-${ARCH}" )" \
-  && tar -xvzf hub.tgz $(tar -tzf hub.tgz | grep bin/hub) \
-  && mv hub-*/bin/hub /usr/local/bin \
-  && rm -rf hub-linux-${ARCH}* hub.tgz
-
-### aws-vault
-RUN curl --silent --location --output /usr/local/bin/aws-vault -s "$(curl -s https://api.github.com/repos/99designs/aws-vault/releases/latest | jq -r ' .assets[] | .browser_download_url' | grep "linux-${ARCH}" )" \
-  && chmod +x /usr/local/bin/aws-vault
-
-### nvim
-RUN curl --silent --location "$(curl -s https://api.github.com/repos/neovim/neovim/releases/latest  | jq -r ' .assets[] | .browser_download_url' | grep "linux-${ARCH}.tar.gz")" | tar -xvzf - -C /tmp nvim-linux-arm64/bin/nvim \
-  && mv /tmp/nvim-linux-arm64/bin/nvim /usr/local/bin \
-  && rm -rf /tmp/nvim-linux-arm64
-
-### direnv
-RUN curl --silent --location --output /usr/local/bin/direnv "$(curl -s https://api.github.com/repos/direnv/direnv/releases/latest  | jq -r ' .assets[] | .browser_download_url' | grep "linux-${ARCH}")" \
-  && chmod +x /usr/local/bin/direnv
-
-### tfsec
-RUN curl --silent --location --output /usr/local/bin/tfsec "$(curl -s https://api.github.com/repos/aquasecurity/tfsec/releases/latest  | jq -r ' .assets[] | .browser_download_url' | grep "tfsec-linux-${ARCH}$")" \
-  && chmod +x /usr/local/bin/tfsec
-
-### tflint
-RUN curl --silent --location --output tflint.zip -s "$(curl -s https://api.github.com/repos/terraform-linters/tflint/releases/latest | jq -r ' .assets[] | .browser_download_url' | grep "linux_${ARCH}" )" \
-  && unzip tflint.zip \
-  && chmod +x tflint \
-  && mv tflint /usr/local/bin \
-  && rm tflint.zip
-
-# amazon q
-RUN if ( test "$ARCH" = "amd64" ); then D_ARCH=x86_64; else D_ARCH=aarch64; fi \
-  && curl --silent --location --output /tmp/q.zip  "https://desktop-release.q.us-east-1.amazonaws.com/latest/q-${D_ARCH}-linux.zip" \
-  && unzip /tmp/q.zip -d /tmp \
-  && mv /tmp/q/bin/* /usr/local/bin/ \
-  && rm -rf /tmp/q*
-
-#just
-RUN if ( test "$ARCH" = "amd64" ); then D_ARCH=x86_64; else D_ARCH=aarch64; fi \
-  && mkdir /tmp/just \
-  && curl --silent --location $(curl -s https://api.github.com/repos/casey/just/releases | jq -r ' .[].assets[].browser_download_url' | grep ${D_ARCH}-unknown-linux | head -1) | tar xzf - -C /tmp/just \
-  && mv /tmp/just/just /usr/local/bin \
-  && rm -rf /tmp/just
-
-# zellij
-# https://github.com/zellij-org/zellij/releases/latest/download/zellij-x86_64-unknown-linux-musl.tar.gz
-# only linux related binaries here
-RUN if ( test "$ARCH" = "amd64" ); then D_ARCH=x86_64; else D_ARCH=aarch64; fi \
-  && curl --silent --location "$(curl -s https://api.github.com/repos/zellij-org/zellij/releases/latest  | jq -r ' .assets[] | .browser_download_url' | grep "zellij-${D_ARCH}-unknown-linux-musl.tar.gz$")" | tar -xvzf -  -C /usr/local/bin
-
-### aws cdk
-### configure yum repo for nodejs
-### 17 version is latest possible because of ldd (2.26) version for current image amazon/aws-cli
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash \
-  && export NVM_DIR="$HOME/.nvm" \
-  && [ -s "$NVM_DIR/nvm.sh" ] \
-  && . "$NVM_DIR/nvm.sh" \
-  && nvm install 22 \
-  && nvm use 22 \
-  && npm install -g aws-cdk
-
-### miller
-RUN curl --silent --location --output miller.tar.gz -s "$( curl -s https://api.github.com/repos/johnkerl/miller/releases/latest | jq -r ' .assets[] | .browser_download_url' | grep "linux-${ARCH}.tar.gz" )" \
-  && tar -xvzf miller.tar.gz "miller*/mlr" -C . \
-  && mv miller*/mlr /usr/local/bin \
-  && rm -rf miller*
-
-### session-manager
-RUN if ( test "$ARCH" = "amd64" ); then SM_ARCH=64bit; else SM_ARCH=arm64; fi && sudo yum install -y https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_${SM_ARCH}/session-manager-plugin.rpm
-
-### granted / assume
-RUN if ( test "$ARCH" = "amd64" ); then SM_ARCH=x86_64; else SM_ARCH=arm64; fi && curl -OL releases.commonfate.io/granted/v0.31.0/granted_0.31.0_linux_${SM_ARCH}.tar.gz \
-  && tar -zxvf ./granted_0.31.0_linux_${SM_ARCH}.tar.gz -C /usr/local/bin/ \
-  && rm ./granted_0.31.0_linux_${SM_ARCH}.tar.gz
-
-#terraform graph beautifier
-RUN curl --silent --location --output tf-graph-beauty.tar.gz $(curl -s https://api.github.com/repos/pcasteran/terraform-graph-beautifier/releases/latest | jq -r ' .assets[] | .browser_download_url' | grep "linux_${ARCH}.tar.gz$") \
-  && tar -xvzf tf-graph-beauty.tar.gz terraform-graph-beautifier \
-  && mv terraform-graph-beautifier /usr/local/bin/
-
-COPY --from=terraform	/usr/local/tfenv/bin		/usr/local/tfenv/bin
-COPY --from=terraform	/usr/local/tfenv/lib		/usr/local/tfenv/lib
-COPY --from=terraform	/usr/local/tfenv/libexec	/usr/local/tfenv/libexec
-COPY --from=terraform	/usr/local/tfenv/share		/usr/local/tfenv/share
-
-RUN ln -s /usr/local/tfenv/bin/tfenv /usr/local/bin/tfenv \
-  && /usr/local/bin/tfenv install ${TERRAFORM_VERSION} \
-  && export TERRAFORM_VERSION=$(tfenv list-remote | head -1) \
-  && ln -s /usr/local/tfenv/bin/terraform /usr/local/bin/terraform
-
-COPY --from=terragrunt	/usr/local/tgenv		/usr/local/tgenv 
-RUN ln -s /usr/local/tgenv/bin/terragrunt /usr/local/bin/terragrunt \
-  && ln -s /usr/local/tgenv/bin/tgenv /usr/local/bin/tgenv \
-  && export TERRAGRUNT_VERSION=$(tgenv list-remote | head -1) \
-  && /usr/local/bin/tgenv install ${TERRAGRUNT_VERSION}
-
-COPY --from=kubectl  	/tmp/kubectl			/usr/local/bin/kubectl
-#COPY --from=kops	/tmp/kops			/usr/local/bin/kops
-COPY --from=kafka       /opt/kafka			/opt/kafka
-RUN  adduser -s /sbin/nologin kafka && chown -R kafka: /opt/kafka
-
-### copy all prebuilded tools from other docker images
-### zsh installation
-RUN git clone https://github.com/robbyrussell/oh-my-zsh.git /oh-my-zsh 
-RUN git clone https://github.com/zsh-users/zsh-completions ${ZSH_CUSTOM:-/oh-my-zsh/custom}/plugins/zsh-completions
-RUN git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-/oh-my-zsh/custom}/plugins/zsh-autosuggestions
-RUN git clone https://github.com/bhilburn/powerlevel9k.git /powerlevel9k
-RUN git clone --depth=1 https://github.com/romkatv/powerlevel10k.git /powerlevel10k
-RUN curl --output /usr/local/bin/kube-ps1.sh  https://raw.githubusercontent.com/jonmosco/kube-ps1/master/kube-ps1.sh && chmod +x /usr/local/bin/kube-ps1.sh
-RUN git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "/zsh-syntax-highlighting" --depth 1
-
+# Copy configuration scripts and git tools
 COPY settings-and-configs.sh /usr/local/bin/settings-and-configs.sh
+COPY git-* /usr/local/bin/
 RUN /usr/local/bin/settings-and-configs.sh
 
-COPY git-* /usr/local/bin/
+# Install specific terraform and terragrunt versions if specified
+RUN if [ "$TERRAFORM_VERSION" != "latest" ] && [ -n "$TERRAFORM_VERSION" ]; then \
+        for version in $TERRAFORM_VERSION; do \
+            tfenv install "$version" && tfenv use "$version"; \
+        done; \
+    else \
+        tfenv install latest && tfenv use latest; \
+    fi
 
-ARG TERRAFORM_VERSION
-RUN if [ "$TERRAFORM_VERSION" != "" ]; then for version in $TERRAFORM_VERSION; do tfenv install "$version"; tfenv use "$version"; done; fi
+RUN if [ "$TERRAGRUNT_VERSION" != "latest" ] && [ -n "$TERRAGRUNT_VERSION" ]; then \
+        for version in $TERRAGRUNT_VERSION; do \
+            tgenv install "$version" && tgenv use "$version"; \
+        done; \
+    else \
+        tgenv install latest && tgenv use latest; \
+    fi
 
-ARG TERRAGRUNT_VERSION
-RUN if [ "$TERRAGRUNT_VERSION" != "" ]; then for version in $TERRAGRUNT_VERSION; do export PATH=$PATH:/usr/local/bin:/usr/local/tgenv/bin; tgenv install "$version"; tgenv use "$version"; done; fi
+# Final direnv installation
+RUN curl -sfL https://direnv.net/install.sh | bash && \
+    rm -rf /tmp/* /var/cache/yum/* /root/.cache
 
-RUN curl -sfL https://direnv.net/install.sh | bash
+WORKDIR /workspace
+CMD ["bash"]
