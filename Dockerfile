@@ -2,7 +2,6 @@
 ARG KOPS_VERSION=${KOPS_VERSION:-v1.25.0}
 ARG KAFKA_VERSION=${KAFKA_VERSION:-3.8.0}
 ARG SCALA_VERSION=${SCALA_VERSION:-2.13}
-ARG FLY=${FLY:-7.11.2}
 ARG HELM_VERSION=${HELM_VERSION:-"latest"}
 ARG TERRAGRUNT_VERSION=${TERRAGRUNT_VERSION:-"latest"}
 ARG TERRAFORM_VERSION=${TERRAFORM_VERSION:-"latest"}
@@ -43,7 +42,6 @@ WORKDIR /workspace
 # Download stage - all external downloads in one stage
 FROM base as downloader
 ARG ARCH
-ARG FLY
 ARG KAFKA_VERSION
 ARG SCALA_VERSION
 
@@ -114,14 +112,6 @@ RUN . /tmp/arch_vars && \
     mv tflint /usr/local/bin/ && \
     chmod +x /usr/local/bin/tflint && \
     rm tflint.zip
-
-# fly
-RUN . /tmp/arch_vars && \
-    curl --silent --location "$(curl -s https://api.github.com/repos/concourse/concourse/releases | jq -r '. [] | select(.tag_name|test("v'${FLY}'")) | .assets[] | .browser_download_url' | grep "fly-${FLY}-linux-${ARCH}.tgz$")" -o fly.tgz && \
-    tar -xzf fly.tgz && \
-    mv fly /usr/local/bin/ && \
-    chmod +x /usr/local/bin/fly && \
-    rm fly.tgz
 
 # jid
 RUN . /tmp/arch_vars && \
