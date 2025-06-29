@@ -50,6 +50,8 @@ ARG FLY
 ARG KAFKA_VERSION
 ARG SCALA_VERSION
 
+LABEL name="kafka" version=${KAFKA_VERSION}
+
 WORKDIR /tmp
 
 # Set architecture variables for different tools
@@ -59,10 +61,10 @@ RUN if [ "$ARCH" = "amd64" ]; then \
         export D_ARCH=aarch64 SM_ARCH=arm64 SM_ARCH2=arm64; \
     fi && \
     # Docker Compose
-    curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m)" -o /usr/local/bin/docker-compose && \
+    curl --silent --location "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m)" -o /usr/local/bin/docker-compose && \
     chmod 755 /usr/local/bin/docker-compose && \
     # Docker binary
-    curl -L "https://download.docker.com/linux/static/stable/${D_ARCH}/docker-27.3.1.tgz" | tar xz && \
+    curl --silent --location "https://download.docker.com/linux/static/stable/${D_ARCH}/docker-27.3.1.tgz" | tar xz && \
     mv docker/docker /usr/local/bin/ && \
     # OpenTofu
     curl --proto '=https' --tlsv1.2 -fsSL https://get.opentofu.org/install-opentofu.sh -o install-opentofu.sh && \
@@ -71,88 +73,88 @@ RUN if [ "$ARCH" = "amd64" ]; then \
     # Helm
     curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash && \
     # kubectl
-    curl -L "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/${ARCH}/kubectl" -o /usr/local/bin/kubectl && \
+    curl --silent --location "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/${ARCH}/kubectl" -o /usr/local/bin/kubectl && \
     chmod +x /usr/local/bin/kubectl && \
     # kubectx & kubens
-    curl -L https://raw.githubusercontent.com/ahmetb/kubectx/master/kubectx -o /usr/local/bin/kubectx && \
-    curl -L https://raw.githubusercontent.com/ahmetb/kubectx/master/kubens -o /usr/local/bin/kubens && \
+    curl --silent --location https://raw.githubusercontent.com/ahmetb/kubectx/master/kubectx -o /usr/local/bin/kubectx && \
+    curl --silent --location https://raw.githubusercontent.com/ahmetb/kubectx/master/kubens -o /usr/local/bin/kubens && \
     chmod +x /usr/local/bin/kube* && \
     # kind
-    curl -L "$(curl -s https://api.github.com/repos/kubernetes-sigs/kind/releases | jq -r '.[].assets[].browser_download_url' | grep linux-${ARCH} | head -1)" -o /usr/local/bin/kind && \
+    curl --silent --location "$(curl -s https://api.github.com/repos/kubernetes-sigs/kind/releases | jq -r '.[].assets[].browser_download_url' | grep linux-${ARCH} | head -1)" -o /usr/local/bin/kind && \
     chmod +x /usr/local/bin/kind && \
     # helmfile
-    curl -L "$(curl -s https://api.github.com/repos/roboll/helmfile/releases | jq -r '.[].assets[].browser_download_url' | grep linux_${ARCH} | head -1)" -o /usr/local/bin/helmfile && \
+    curl --silent --location "$(curl -s https://api.github.com/repos/roboll/helmfile/releases | jq -r '.[].assets[].browser_download_url' | grep linux_${ARCH} | head -1)" -o /usr/local/bin/helmfile && \
     chmod +x /usr/local/bin/helmfile && \
     # terraform-docs
-    curl -L "$(curl -s https://api.github.com/repos/terraform-docs/terraform-docs/releases | jq -r '.[].assets[].browser_download_url' | grep linux-${ARCH} | head -1)" | tar xz && \
+    curl --silent --location "$(curl -s https://api.github.com/repos/terraform-docs/terraform-docs/releases | jq -r '.[].assets[].browser_download_url' | grep linux-${ARCH} | head -1)" | tar xz && \
     mv terraform-docs /usr/local/bin/ && \
     chmod +x /usr/local/bin/terraform-docs && \
     # tflint (only once!)
-    curl -L "$(curl -s https://api.github.com/repos/terraform-linters/tflint/releases/latest | grep -o -E "https://.+?_linux_${ARCH}.zip")" -o tflint.zip && \
+    curl --silent --location "$(curl -s https://api.github.com/repos/terraform-linters/tflint/releases/latest | grep -o -E "https://.+?_linux_${ARCH}.zip")" -o tflint.zip && \
     unzip tflint.zip && \
     mv tflint /usr/local/bin/ && \
     chmod +x /usr/local/bin/tflint && \
     # fly
-    curl -L "$(curl -s https://api.github.com/repos/concourse/concourse/releases | jq -r '. [] | select(.tag_name|test("v'${FLY}'")) | .assets[] | .browser_download_url' | grep "fly-${FLY}-linux-${ARCH}.tgz$")" -o fly.tgz && \
+    curl --silent --location "$(curl -s https://api.github.com/repos/concourse/concourse/releases | jq -r '. [] | select(.tag_name|test("v'${FLY}'")) | .assets[] | .browser_download_url' | grep "fly-${FLY}-linux-${ARCH}.tgz$")" -o fly.tgz && \
     tar -xzf fly.tgz && \
     mv fly /usr/local/bin/ && \
     chmod +x /usr/local/bin/fly && \
     # jid
-    curl -L "$(curl -s https://api.github.com/repos/simeji/jid/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux_${ARCH}")" -o jid.zip && \
+    curl --silent --location "$(curl -s https://api.github.com/repos/simeji/jid/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux_${ARCH}")" -o jid.zip && \
     unzip jid.zip && \
     mv jid /usr/local/bin/ && \
     chmod +x /usr/local/bin/jid && \
     # aws-iam-authenticator
-    curl -L "https://amazon-eks.s3.us-west-2.amazonaws.com/1.18.9/2020-11-02/bin/linux/${ARCH}/aws-iam-authenticator" -o /usr/local/bin/aws-iam-authenticator && \
+    curl --silent --location "https://amazon-eks.s3.us-west-2.amazonaws.com/1.18.9/2020-11-02/bin/linux/${ARCH}/aws-iam-authenticator" -o /usr/local/bin/aws-iam-authenticator && \
     chmod +x /usr/local/bin/aws-iam-authenticator && \
     # yq
-    curl -L "$(curl -s https://api.github.com/repos/mikefarah/yq/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux_${ARCH}$")" -o /usr/local/bin/yq && \
+    curl --silent --location "$(curl -s https://api.github.com/repos/mikefarah/yq/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux_${ARCH}$")" -o /usr/local/bin/yq && \
     chmod +x /usr/local/bin/yq && \
     # eksctl
-    curl -L "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_${ARCH}.tar.gz" | tar xz && \
+    curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_${ARCH}.tar.gz" | tar xz && \
     mv eksctl /usr/local/bin/ && \
     chmod +x /usr/local/bin/eksctl && \
     # hub
-    curl -L "$(curl -s https://api.github.com/repos/mislav/hub/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux-${ARCH}")" -o hub.tgz && \
+    curl --silent --location "$(curl -s https://api.github.com/repos/mislav/hub/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux-${ARCH}")" -o hub.tgz && \
     tar -xzf hub.tgz --strip-components=2 --wildcards "*/bin/hub" && \
     mv hub /usr/local/bin/ && \
     chmod +x /usr/local/bin/hub && \
     # aws-vault
-    curl -L "$(curl -s https://api.github.com/repos/99designs/aws-vault/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux-${ARCH}")" -o /usr/local/bin/aws-vault && \
+    curl --silent --location "$(curl -s https://api.github.com/repos/99designs/aws-vault/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux-${ARCH}")" -o /usr/local/bin/aws-vault && \
     chmod +x /usr/local/bin/aws-vault && \
     # nvim
-    curl -L "$(curl -s https://api.github.com/repos/neovim/neovim/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux-${SM_ARCH2}.tar.gz")" | tar -xz --strip-components=2 --wildcards "*/bin/nvim" && \
+    curl --silent --location "$(curl -s https://api.github.com/repos/neovim/neovim/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux-${SM_ARCH2}.tar.gz")" | tar -xz --strip-components=2 --wildcards "*/bin/nvim" && \
     mv nvim /usr/local/bin/ && \
     chmod +x /usr/local/bin/nvim && \
     # direnv
-    curl -L "$(curl -s https://api.github.com/repos/direnv/direnv/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux-${ARCH}")" -o /usr/local/bin/direnv && \
+    curl --silent --location "$(curl -s https://api.github.com/repos/direnv/direnv/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux-${ARCH}")" -o /usr/local/bin/direnv && \
     chmod +x /usr/local/bin/direnv && \
     # tfsec
-    curl -L "$(curl -s https://api.github.com/repos/aquasecurity/tfsec/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "tfsec-linux-${ARCH}$")" -o /usr/local/bin/tfsec && \
+    curl --silent --location "$(curl -s https://api.github.com/repos/aquasecurity/tfsec/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "tfsec-linux-${ARCH}$")" -o /usr/local/bin/tfsec && \
     chmod +x /usr/local/bin/tfsec && \
     # Amazon Q
-    curl -L "https://desktop-release.q.us-east-1.amazonaws.com/latest/q-${D_ARCH}-linux.zip" -o q.zip && \
+    curl --silent --location "https://desktop-release.q.us-east-1.amazonaws.com/latest/q-${D_ARCH}-linux.zip" -o q.zip && \
     unzip q.zip && \
     mv q/bin/* /usr/local/bin/ && \
     # just
-    curl -L "$(curl -s https://api.github.com/repos/casey/just/releases | jq -r '.[].assets[].browser_download_url' | grep ${D_ARCH}-unknown-linux | head -1)" | tar xz && \
+    curl --silent --location "$(curl -s https://api.github.com/repos/casey/just/releases | jq -r '.[].assets[].browser_download_url' | grep ${D_ARCH}-unknown-linux | head -1)" | tar xz && \
     mv just /usr/local/bin/ && \
     # zellij
-    curl -L "$(curl -s https://api.github.com/repos/zellij-org/zellij/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "zellij-${D_ARCH}-unknown-linux-musl.tar.gz$")" | tar -xz -C /usr/local/bin && \
+    curl --silent --location "$(curl -s https://api.github.com/repos/zellij-org/zellij/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "zellij-${D_ARCH}-unknown-linux-musl.tar.gz$")" | tar -xz -C /usr/local/bin && \
     # miller
-    curl -L "$(curl -s https://api.github.com/repos/johnkerl/miller/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux-${ARCH}.tar.gz")" -o miller.tar.gz && \
+    curl --silent --location "$(curl -s https://api.github.com/repos/johnkerl/miller/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux-${ARCH}.tar.gz")" -o miller.tar.gz && \
     tar -xzf miller.tar.gz --strip-components=1 --wildcards "*/mlr" && \
     mv mlr /usr/local/bin/ && \
     # granted/assume
-    curl -L "releases.commonfate.io/granted/v0.31.0/granted_0.31.0_linux_${SM_ARCH2}.tar.gz" -o granted.tar.gz && \
+    curl --silent --location "releases.commonfate.io/granted/v0.31.0/granted_0.31.0_linux_${SM_ARCH2}.tar.gz" -o granted.tar.gz && \
     tar -xzf granted.tar.gz -C /usr/local/bin/ && \
     # terraform-graph-beautifier
-    curl -L "$(curl -s https://api.github.com/repos/pcasteran/terraform-graph-beautifier/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux_${ARCH}.tar.gz$")" -o tf-graph-beauty.tar.gz && \
+    curl --silent --location "$(curl -s https://api.github.com/repos/pcasteran/terraform-graph-beautifier/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux_${ARCH}.tar.gz$")" -o tf-graph-beauty.tar.gz && \
     tar -xzf tf-graph-beauty.tar.gz terraform-graph-beautifier && \
     mv terraform-graph-beautifier /usr/local/bin/ && \
     # Kafka
     mkdir -p /opt && \
-    curl -L "https://archive.apache.org/dist/kafka/${KAFKA_VERSION}/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz" | tar -xz -C /opt && \
+    curl --silent --location "https://archive.apache.org/dist/kafka/${KAFKA_VERSION}/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz" | tar -xz -C /opt && \
     mv "/opt/kafka_${SCALA_VERSION}-${KAFKA_VERSION}" /opt/kafka && \
     # Clean up all temporary files
     rm -rf /tmp/*
