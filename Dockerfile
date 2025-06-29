@@ -123,7 +123,7 @@ RUN if [ "$ARCH" = "amd64" ]; then \
     curl --silent --location "$(curl -s https://api.github.com/repos/99designs/aws-vault/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux-${ARCH}")" -o /usr/local/bin/aws-vault && \
     chmod +x /usr/local/bin/aws-vault && \
     # nvim
-    curl --silent --location "$(curl -s https://api.github.com/repos/neovim/neovim/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "linux-${SM_ARCH2}.tar.gz")" | tar -xz --strip-components=2 --wildcards "*/bin/nvim" && \
+    curl --silent --location "$(curl -s https://api.github.com/repos/neovim/neovim/releases/latest | jq -r '.assets[] | .browser_download_url' | grep "nvim-linux-${SM_ARCH2}.tar.gz$")" | tar -xz --strip-components=2 --wildcards "*/bin/nvim" && \
     mv nvim /usr/local/bin/ && \
     chmod +x /usr/local/bin/nvim && \
     # direnv
