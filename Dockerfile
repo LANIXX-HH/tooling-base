@@ -1,4 +1,5 @@
 # Build arguments with default versions
+# update docker image 2025-08-01
 ARG KOPS_VERSION=${KOPS_VERSION:-v1.25.0}
 ARG KAFKA_VERSION=${KAFKA_VERSION:-3.8.0}
 ARG SCALA_VERSION=${SCALA_VERSION:-2.13}
